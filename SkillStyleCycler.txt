@@ -1,0 +1,10 @@
+## Title: SkillStyleCycler
+## Author: Kyzeragon
+## Version: 0.0.0
+## APIVersion: 101044
+## DependsOn: LibAddonMenu-2.0>=31
+
+## SavedVariables: SkillStyleCyclerSavedVariables
+
+src/Main.lua
+src/Settings.lua
