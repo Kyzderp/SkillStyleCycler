@@ -1,7 +1,7 @@
 SkillStyleCycler = SkillStyleCycler or {}
 local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
-SSC.version = "0.0.0"
+SSC.version = "0.0.1"
 
 local defaultOptions = {
     debug = false,
@@ -163,10 +163,12 @@ SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll()
 ---------------------------------------------------------------------------------------------------
 -- Initialize
 ---------------------------------------------------------------------------------------------------
+-- TODO: call this on skill changes
 local function BuildSkillStyleTable()
     d("building skill style table")
     for skillType = 1, GetNumSkillTypes() do
         for skillLineIndex = 1, GetNumSkillLines(skillType) do
+            PrintDebug(GetSkillLineNameById(GetSkillLineId(skillType, skillLineIndex)))
             -- The current class' 3 lines is always returned first, so skip the rest
             if (skillType == SKILL_TYPE_CLASS and skillLineIndex > 3) then break end
 
@@ -203,6 +205,7 @@ local function BuildSkillStyleTable()
         end
     end
 end
+SSC.BuildSkillStyleTable = BuildSkillStyleTable
 
 
 ---------------------------------------------------------------------------------------------------
@@ -269,8 +272,12 @@ end
 -- Combat state
 local function OnCombatStateChanged(_, inCombat)
     if (not inCombat and SSC.savedOptions.triggers.exitCombat) then
-        d("changing styles because exited combat")
-        CycleAll()
+        zo_callLater(function()
+            if (not IsUnitInCombat("player")) then
+                d("changing styles because exited combat")
+                CycleAll()
+            end
+        end, 2000)
     end
 end
 
@@ -278,8 +285,10 @@ end
 -- "Loadscreen"
 local function OnPlayerActivated()
     if (SSC.savedOptions.triggers.loadscreen) then
-        d("changing styles because player activated")
-        CycleAll()
+        zo_callLater(function()
+            d("changing styles because player activated")
+            CycleAll()
+        end, 1000)
     end
 end
 
