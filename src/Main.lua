@@ -149,13 +149,27 @@ local function MaybeChangeStyle(progressionId)
 end
 
 local function CycleAll()
-    local appliedIcons = ""
+    local appliedIcons = {}
+    local line = ""
+    local numInLine = 0
     for progressionId, _ in pairs(skillStyleTable) do
         local error, icon = MaybeChangeStyle(progressionId)
         if (error) then return end
-        appliedIcons = appliedIcons .. " " .. icon
+
+        if (numInLine > 15) then
+            table.insert(appliedIcons, line)
+            numInLine = 0
+            line = ""
+        end
+        numInLine = numInLine + 1
+        line = line .. icon .. " "
     end
-    CHAT_SYSTEM:AddMessage("Applied:" .. appliedIcons)
+    table.insert(appliedIcons, line)
+
+    -- Split into multiple lines, or too many icons means some get cut off
+    for _, line in ipairs(appliedIcons) do
+        CHAT_SYSTEM:AddMessage(line)
+    end
 end
 SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll()
 
