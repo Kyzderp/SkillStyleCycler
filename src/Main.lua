@@ -3,13 +3,29 @@ local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
 SSC.version = "0.0.1"
 
+--[[
+Modes:
+Do nothing
+Randomize all
+Randomize different
+Cycle
+]]
+SSC.Modes = {
+    DO_NOTHING = "Do nothing",
+    RANDOMIZE_ALL = "Randomize all",
+    RANDOMIZE_DIFFERENT = "Randomize different",
+    CYCLE = "Cycle",
+}
+
 local defaultOptions = {
     debug = false,
-    mode = "Randomize all", -- Randomize all (including current), Randomize different, Cycle, ???
+    throttle = 20, -- Minimum number of seconds between triggering
+    onlyTriggerIfCombat = true,
     triggers = {
-        login = false,
-        exitCombat = true,
-        loadscreen = true, -- really just on player activated
+        login = SSC.Modes.DO_NOTHING,
+        exitCombat = SSC.Modes.DO_NOTHING,
+        loadscreen = SSC.Modes.DO_NOTHING, -- really just on player activated
+        onCast = SSC.Modes.DO_NOTHING, -- TODO
     },
 }
 
@@ -101,22 +117,22 @@ local function CanChangeStyle(collectibleId)
     return false
 end
 
-local function MaybeChangeStyle(progressionId)
+local function MaybeChangeStyle(progressionId, mode)
     local data = skillStyleTable[progressionId]
     if (not data) then return end
 
     local newIndex
-    if (SSC.savedOptions.mode == "Cycle") then
+    if (mode == SSC.Modes.CYCLE) then
         -- Increment, wrapping around if needed
         newIndex = data.active + 1
         if (newIndex > #data.available) then
             newIndex = 1
         end
-    elseif (SSC.savedOptions.mode == "Randomize all") then
+    elseif (mode == SSC.Modes.RANDOMIZE_ALL) then
         -- Pick randomly
         newIndex = GetRandomNumber(#data.available)
         -- if (newIndex == data.active) then return end -- Same as current, so do nothing
-    elseif (SSC.savedOptions.mode == "Randomize different") then
+    elseif (mode == SSC.Modes.RANDOMIZE_DIFFERENT) then
         -- Pick randomly
         newIndex = GetRandomNumberExcept(#data.available, data.active)
         -- if (newIndex == data.active) then return end -- Same as current, so do nothing
@@ -148,12 +164,12 @@ local function MaybeChangeStyle(progressionId)
     return false, string.format("|t20:20:%s|t", icon)
 end
 
-local function CycleAll()
+local function CycleAll(mode)
     local appliedIcons = {}
     local line = ""
     local numInLine = 0
     for progressionId, _ in pairs(skillStyleTable) do
-        local error, icon = MaybeChangeStyle(progressionId)
+        local error, icon = MaybeChangeStyle(progressionId, mode)
         if (error) then return end
 
         if (numInLine > 15) then
@@ -171,13 +187,13 @@ local function CycleAll()
         CHAT_SYSTEM:AddMessage(line)
     end
 end
-SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll()
+SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 
 
 ---------------------------------------------------------------------------------------------------
 -- Initialize
 ---------------------------------------------------------------------------------------------------
--- TODO: call this on skill changes
+-- TODO: call this on skill changes and style unlocked
 local function BuildSkillStyleTable()
     d("building skill style table")
     for skillType = 1, GetNumSkillTypes() do
@@ -285,11 +301,11 @@ end
 ---------------------------------------------------------------------
 -- Combat state
 local function OnCombatStateChanged(_, inCombat)
-    if (not inCombat and SSC.savedOptions.triggers.exitCombat) then
+    if (not inCombat and SSC.savedOptions.triggers.exitCombat ~= SSC.Modes.DO_NOTHING) then
         zo_callLater(function()
             if (not IsUnitInCombat("player")) then
                 d("changing styles because exited combat")
-                CycleAll()
+                CycleAll(SSC.savedOptions.triggers.exitCombat)
             end
         end, 2000)
     end
@@ -298,10 +314,10 @@ end
 ---------------------------------------------------------------------
 -- "Loadscreen"
 local function OnPlayerActivated()
-    if (SSC.savedOptions.triggers.loadscreen) then
+    if (SSC.savedOptions.triggers.loadscreen ~= SSC.Modes.DO_NOTHING) then
         zo_callLater(function()
             d("changing styles because player activated")
-            CycleAll()
+            CycleAll(SSC.savedOptions.triggers.loadscreen)
         end, 1000)
     end
 end
@@ -313,9 +329,9 @@ local function OnPlayerActivatedFirstTIme()
 
     BuildSkillStyleTable()
 
-    if (SSC.savedOptions.triggers.login) then
+    if (SSC.savedOptions.triggers.login ~= SSC.Modes.DO_NOTHING) then
         d("changing styles because login/reload")
-        CycleAll()
+        CycleAll(SSC.savedOptions.triggers.login)
     end
 
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "PlayerActivated", EVENT_PLAYER_ACTIVATED, OnPlayerActivated)
@@ -324,7 +340,7 @@ end
 ---------------------------------------------------------------------
 -- Initialize
 local function Initialize()
-    SSC.savedOptions = ZO_SavedVars:NewAccountWide("SkillStyleCyclerSavedVariables", 1, "Options", defaultOptions)
+    SSC.savedOptions = ZO_SavedVars:NewAccountWide("SkillStyleCyclerSavedVariables", 2, "Options", defaultOptions)
 
     SSC.CreateSettingsMenu()
 

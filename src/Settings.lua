@@ -14,8 +14,11 @@ function SSC.CreateSettingsMenu()
     }
 
     -- TODO: button to randomize, button to set all, button to clear all
-    -- TODO: make each trigger a dropdown instead, with the option to do nothing
     -- TODO: maybe retry applying styles after a wait, for certain blocked reasons
+    -- TODO: don't change skills that aren't purchased
+    -- TODO: toggleable which skills not to apply to
+    -- TODO: disclaimer
+    -- TODO: on cast
 
     local optionsData = {
         {
@@ -36,29 +39,17 @@ function SSC.CreateSettingsMenu()
             width = "full",
         },
         {
-            type = "dropdown",
-            name = "Mode",
-            tooltip = "Randomize all - randomly choose a style, including the current\nRandomize different - randomly choose a style that is different from the current\nCycle - choose the next style in the list",
-            choices = {"Randomize all", "Randomize different", "Cycle"},
-            getFunc = function()
-                return SSC.savedOptions.mode
-            end,
-            setFunc = function(value)
-                SSC.savedOptions.mode = value
-            end,
-            width = "full",
-        },
-        {
             type = "description",
             title = "|c3bdb5eTriggers|r",
-            text = nil,
+            text = "Do nothing - do not change styles\nRandomize all - randomly choose a style, including the current\nRandomize different - randomly choose a style that is different from the current\nCycle - choose the next style in the list",
             width = "full",
         },
         {
-            type = "checkbox",
+            type = "dropdown",
             name = "On login",
-            tooltip = "Cycle styles on login",
-            default = false,
+            tooltip = "Change styles on login",
+            choices = {SSC.Modes.DO_NOTHING, SSC.Modes.RANDOMIZE_ALL, SSC.Modes.RANDOMIZE_DIFFERENT, SSC.Modes.CYCLE},
+            default = SSC.Modes.DO_NOTHING,
             getFunc = function() return SSC.savedOptions.triggers.login end,
             setFunc = function(value)
                 SSC.savedOptions.triggers.login = value
@@ -66,10 +57,11 @@ function SSC.CreateSettingsMenu()
             width = "full",
         },
         {
-            type = "checkbox",
+            type = "dropdown",
             name = "On exiting combat",
             tooltip = "Cycle styles on exiting combat",
-            default = true,
+            choices = {SSC.Modes.DO_NOTHING, SSC.Modes.RANDOMIZE_ALL, SSC.Modes.RANDOMIZE_DIFFERENT, SSC.Modes.CYCLE},
+            default = SSC.Modes.DO_NOTHING,
             getFunc = function() return SSC.savedOptions.triggers.exitCombat end,
             setFunc = function(value)
                 SSC.savedOptions.triggers.exitCombat = value
@@ -77,10 +69,11 @@ function SSC.CreateSettingsMenu()
             width = "full",
         },
         {
-            type = "checkbox",
+            type = "dropdown",
             name = "On loadscreen",
             tooltip = "Cycle styles on loadscreen (player activated)",
-            default = true,
+            choices = {SSC.Modes.DO_NOTHING, SSC.Modes.RANDOMIZE_ALL, SSC.Modes.RANDOMIZE_DIFFERENT, SSC.Modes.CYCLE},
+            default = SSC.Modes.DO_NOTHING,
             getFunc = function() return SSC.savedOptions.triggers.loadscreen end,
             setFunc = function(value)
                 SSC.savedOptions.triggers.loadscreen = value
