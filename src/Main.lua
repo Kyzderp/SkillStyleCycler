@@ -40,6 +40,96 @@ end
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
+local reasons = {
+    [COLLECTIBLE_USAGE_BLOCK_REASON_ACTIVE_DIG_SITE_REQUIRED] = "ACTIVE_DIG_SITE_REQUIRED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_BLACKLISTED] = "BLACKLISTED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_BLOCKED_BY_LEADERBOARD_EVENT] = "BLOCKED_BY_LEADERBOARD_EVENT",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_BLOCKED_BY_SUBZONE] = "BLOCKED_BY_SUBZONE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_BLOCKED_BY_ZONE] = "BLOCKED_BY_ZONE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_CATEGORY_REQUIREMENT_FAILED] = "CATEGORY_REQUIREMENT_FAILED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_COLLECTIBLE_ALREADY_QUEUED] = "COLLECTIBLE_ALREADY_QUEUED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_COMPANION_INTRO_QUEST] = "COMPANION_INTRO_QUEST",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_COMPANION_INTRO_QUEST_BLOCKED_BY_ZONE] = "COMPANION_INTRO_QUEST_BLOCKED_BY_ZONE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_COMPANION_MENU_REQUIRED] = "COMPANION_MENU_REQUIRED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_DEAD] = "DEAD",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_DEFAULT_ALREADY_ACTIVE] = "DEFAULT_ALREADY_ACTIVE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_DUELING] = "DUELING",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_GROUP_FULL] = "GROUP_FULL",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_HAS_PENDING_COMPANION] = "HAS_PENDING_COMPANION",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_ALLIANCE] = "INVALID_ALLIANCE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_CLASS] = "INVALID_CLASS",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_COLLECTIBLE] = "INVALID_COLLECTIBLE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_GENDER] = "INVALID_GENDER",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_RACE] = "INVALID_RACE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_IN_AIR] = "IN_AIR",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_IN_COMBAT] = "IN_COMBAT",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_IN_HIDEY_HOLE] = "IN_HIDEY_HOLE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_IN_WATER] = "IN_WATER",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_MAX_NUMBER_EQUIPPED] = "MAX_NUMBER_EQUIPPED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_MOUNT_IN_COMBAT] = "MOUNT_IN_COMBAT",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_NOT_BLOCKED] = "NOT_BLOCKED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_ON_COOLDOWN] = "ON_COOLDOWN",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_ON_MOUNT] = "ON_MOUNT",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_PLACED_IN_HOUSE] = "PLACED_IN_HOUSE",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_QUEST_FOLLOWER] = "QUEST_FOLLOWER",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_TARGET_REQUIRED] = "TARGET_REQUIRED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_TEMPORARILY_DISABLED] = "TEMPORARILY_DISABLED",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_UNACQUIRED_SKILL] = "UNACQUIRED_SKILL",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_UNUSABLE_BY_COMPANION] = "UNUSABLE_BY_COMPANION",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_WORLD_BOSS] = "WORLD_BOSS",
+    [COLLECTIBLE_USAGE_BLOCK_REASON_WORLD_EVENT] = "WORLD_EVENT",
+}
+
+local function CanChangeStyle(collectibleId)
+    if (collectibleId == 0) then return true end -- This can happen if there's no style, but want to apply no style
+    if (not IsCollectibleBlocked(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER) and IsCollectibleUsable(collectibleId)) then
+        return true
+    end
+
+    local reason = GetCollectibleBlockReason(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER)
+    d(string.format("|cFF6600Can't change styles because %s|r", reasons[reason] or "???"))
+    return false
+end
+
+-- Use the first collectible in the list as a test. Only use the remaining ones if it passes
+local function UseCollectibles(collectibleIds)
+    if (#collectibleIds == 0) then return end
+
+    local collectibleId = collectibleIds[1]
+    if (not CanChangeStyle(collectibleId)) then return end
+
+    -- Even if the API says the collectible isn't blocked, it could still be because of cooldown
+    -- So attempt to use it, and listen for change
+    PrintDebug("Testing first: |t20:20:" .. GetCollectibleIcon(collectibleId) .. "|t")
+    EVENT_MANAGER:RegisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED, function(_, id)
+        if (id == collectibleId) then
+            EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED)
+            EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT)
+
+            -- Use the remaining collectibles
+            PrintDebug("Using remaining collectibles")
+            for i = 2, #collectibleIds do
+                UseCollectible(collectibleIds[i])
+            end
+        end
+    end)
+
+    -- This doesn't provide ID, so we'll just assume it's from ours
+    EVENT_MANAGER:RegisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT, function(_, result)
+        EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED)
+
+        -- If the collectible failed, then it won't get updated, so stop listening for it
+        if (result ~= COLLECTIBLE_USAGE_BLOCK_REASON_NOT_BLOCKED) then
+            PrintDebug(string.format("|cFF3300Not attempting remaining styles because %s|r", reasons[result] or "???"))
+            EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT)
+        end
+    end)
+    UseCollectible(collectibleId)
+end
+
+---------------------------------------------------------------------
+-- Core: picks the style
+---------------------------------------------------------------------
 --[[
 A map of progressionId to the collectible IDs, but only if the skill is unlocked and the collectibles are unlocked
 {
@@ -64,60 +154,8 @@ local function GetRandomNumberExcept(num, except)
     end
     return result
 end
--- /script local a = {} for i = 1, 1000 do local b = SkillStyleCycler.GetRandomNumberExcept(5, 4) if not a[b] then a[b] = 0 end a[b] = a[b] + 1 end d(a)
 
-local function CanChangeStyle(collectibleId)
-    if (collectibleId == 0) then return true end -- This can happen if there's no style, but want to apply no style
-    if (not IsCollectibleBlocked(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER) and IsCollectibleUsable(collectibleId)) then
-        return true
-    end
-
-    local reasons = {
-        [COLLECTIBLE_USAGE_BLOCK_REASON_ACTIVE_DIG_SITE_REQUIRED] = "ACTIVE_DIG_SITE_REQUIRED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_BLACKLISTED] = "BLACKLISTED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_BLOCKED_BY_LEADERBOARD_EVENT] = "BLOCKED_BY_LEADERBOARD_EVENT",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_BLOCKED_BY_SUBZONE] = "BLOCKED_BY_SUBZONE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_BLOCKED_BY_ZONE] = "BLOCKED_BY_ZONE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_CATEGORY_REQUIREMENT_FAILED] = "CATEGORY_REQUIREMENT_FAILED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_COLLECTIBLE_ALREADY_QUEUED] = "COLLECTIBLE_ALREADY_QUEUED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_COMPANION_INTRO_QUEST] = "COMPANION_INTRO_QUEST",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_COMPANION_INTRO_QUEST_BLOCKED_BY_ZONE] = "COMPANION_INTRO_QUEST_BLOCKED_BY_ZONE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_COMPANION_MENU_REQUIRED] = "COMPANION_MENU_REQUIRED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_DEAD] = "DEAD",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_DEFAULT_ALREADY_ACTIVE] = "DEFAULT_ALREADY_ACTIVE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_DUELING] = "DUELING",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_GROUP_FULL] = "GROUP_FULL",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_HAS_PENDING_COMPANION] = "HAS_PENDING_COMPANION",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_ALLIANCE] = "INVALID_ALLIANCE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_CLASS] = "INVALID_CLASS",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_COLLECTIBLE] = "INVALID_COLLECTIBLE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_GENDER] = "INVALID_GENDER",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_INVALID_RACE] = "INVALID_RACE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_IN_AIR] = "IN_AIR",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_IN_COMBAT] = "IN_COMBAT",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_IN_HIDEY_HOLE] = "IN_HIDEY_HOLE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_IN_WATER] = "IN_WATER",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_MAX_NUMBER_EQUIPPED] = "MAX_NUMBER_EQUIPPED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_MOUNT_IN_COMBAT] = "MOUNT_IN_COMBAT",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_NOT_BLOCKED] = "NOT_BLOCKED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_ON_COOLDOWN] = "ON_COOLDOWN",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_ON_MOUNT] = "ON_MOUNT",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_PLACED_IN_HOUSE] = "PLACED_IN_HOUSE",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_QUEST_FOLLOWER] = "QUEST_FOLLOWER",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_TARGET_REQUIRED] = "TARGET_REQUIRED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_TEMPORARILY_DISABLED] = "TEMPORARILY_DISABLED",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_UNACQUIRED_SKILL] = "UNACQUIRED_SKILL",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_UNUSABLE_BY_COMPANION] = "UNUSABLE_BY_COMPANION",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_WORLD_BOSS] = "WORLD_BOSS",
-        [COLLECTIBLE_USAGE_BLOCK_REASON_WORLD_EVENT] = "WORLD_EVENT",
-    }
-
-    local reason = GetCollectibleBlockReason(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER)
-    d(string.format("|cFF6600Can't change styles because %s|r", reasons[reason] or "???"))
-    return false
-end
-
-local function MaybeChangeStyle(progressionId, mode)
+local function GetCollectibleToUse(progressionId, mode)
     local data = skillStyleTable[progressionId]
     if (not data) then return end
 
@@ -154,23 +192,24 @@ local function MaybeChangeStyle(progressionId, mode)
         icon = GetCollectibleIcon(collectibleId)
     end
 
-    -- Check if it's even usable
-    if (not CanChangeStyle(collectibleId)) then return true, "" end
-
     if (data.active ~= newIndex) then
         data.active = newIndex
-        UseCollectible(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER)
     end
-    return false, string.format("|t20:20:%s|t", icon)
+    d(tostring(progressionId) .. " " .. tostring(collectibleId))
+    return collectibleId, string.format("|t20:20:%s|t", icon)
 end
+SSC.GetCollectibleToUse = GetCollectibleToUse -- /script SkillStyleCycler.GetCollectibleToUse()
 
 local function CycleAll(mode)
+    local collectibleIds = {}
     local appliedIcons = {}
     local line = ""
     local numInLine = 0
     for progressionId, _ in pairs(skillStyleTable) do
-        local error, icon = MaybeChangeStyle(progressionId, mode)
-        if (error) then return end
+        local collectibleId, icon = GetCollectibleToUse(progressionId, mode)
+        if (collectibleId ~= 0) then -- It can be 0 if it's already non styled, and no style is rolled again
+            table.insert(collectibleIds, collectibleId)
+        end
 
         if (numInLine > 15) then
             table.insert(appliedIcons, line)
@@ -186,6 +225,9 @@ local function CycleAll(mode)
     for _, line in ipairs(appliedIcons) do
         CHAT_SYSTEM:AddMessage(line)
     end
+
+    PrintDebug(collectibleIds)
+    UseCollectibles(collectibleIds)
 end
 SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 
@@ -194,6 +236,8 @@ SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 -- Initialize
 ---------------------------------------------------------------------------------------------------
 -- TODO: call this on skill changes and style unlocked
+-- TODO: only add it if skill is purchased
+-- TODO: get rid of active, check it every time
 local function BuildSkillStyleTable()
     d("building skill style table")
     for skillType = 1, GetNumSkillTypes() do
