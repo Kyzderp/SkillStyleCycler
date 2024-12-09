@@ -19,7 +19,7 @@ SSC.Modes = {
 
 local defaultOptions = {
     debug = false,
-    throttle = 20, -- Minimum number of seconds between triggering
+    throttle = 10, -- Minimum number of seconds between triggering
     onlyTriggerIfCombat = true,
     triggers = {
         login = SSC.Modes.DO_NOTHING,
@@ -91,40 +91,55 @@ local function CanChangeStyle(collectibleId)
     return false
 end
 
--- Use the first collectible in the list as a test. Only use the remaining ones if it passes
+-- Use all collectibles in the list, then listen for success or failure. On success, cancel the polling
+local retries = 0
 local function UseCollectibles(collectibleIds)
-    if (#collectibleIds == 0) then return end
+    retries = retries + 1
+    if (retries > 10) then
+        d("too many retries, stopping")
+        EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
+        return
+    end
 
+    -- Use all at once, because staggering can make them go on cooldown
     local collectibleId = collectibleIds[1]
     if (not CanChangeStyle(collectibleId)) then return end
+    for i = 1, #collectibleIds do
+        UseCollectible(collectibleIds[i])
+    end
 
     -- Even if the API says the collectible isn't blocked, it could still be because of cooldown
     -- So attempt to use it, and listen for change
-    PrintDebug("Testing first: |t20:20:" .. GetCollectibleIcon(collectibleId) .. "|t")
+    PrintDebug("Listening: |t20:20:" .. GetCollectibleIcon(collectibleId) .. "|t")
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED, function(_, id)
         if (id == collectibleId) then
             EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED)
             EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT)
 
-            -- Use the remaining collectibles
-            PrintDebug("Using remaining collectibles")
-            for i = 2, #collectibleIds do
-                UseCollectible(collectibleIds[i])
-            end
+            -- On success, stop polling
+            PrintDebug("was probably successful")
+            EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
         end
     end)
 
     -- This doesn't provide ID, so we'll just assume it's from ours
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT, function(_, result)
-        EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED)
+        EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT)
 
         -- If the collectible failed, then it won't get updated, so stop listening for it
         if (result ~= COLLECTIBLE_USAGE_BLOCK_REASON_NOT_BLOCKED) then
-            PrintDebug(string.format("|cFF3300Not attempting remaining styles because %s|r", reasons[result] or "???"))
-            EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT)
+            PrintDebug(string.format("|cFF3300Styles failed because %s|r", reasons[result] or "???"))
+            EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED)
         end
     end)
-    UseCollectible(collectibleId)
+end
+
+local function PollUseCollectibles(collectibleIds)
+    if (#collectibleIds == 0) then return end
+
+    retries = 0
+    UseCollectibles(collectibleIds)
+    EVENT_MANAGER:RegisterForUpdate(SSC.name .. "UseCollectiblesUpdate", 2000, function() UseCollectibles(collectibleIds) end)
 end
 
 ---------------------------------------------------------------------
@@ -195,10 +210,9 @@ local function GetCollectibleToUse(progressionId, mode)
     if (data.active ~= newIndex) then
         data.active = newIndex
     end
-    d(tostring(progressionId) .. " " .. tostring(collectibleId))
     return collectibleId, string.format("|t20:20:%s|t", icon)
 end
-SSC.GetCollectibleToUse = GetCollectibleToUse -- /script SkillStyleCycler.GetCollectibleToUse()
+SSC.GetCollectibleToUse = GetCollectibleToUse -- /script SkillStyleCycler.GetCollectibleToUse(112, SkillStyleCycler.Modes.RANDOMIZE_ALL)
 
 local function CycleAll(mode)
     local collectibleIds = {}
@@ -226,8 +240,7 @@ local function CycleAll(mode)
         CHAT_SYSTEM:AddMessage(line)
     end
 
-    PrintDebug(collectibleIds)
-    UseCollectibles(collectibleIds)
+    PollUseCollectibles(collectibleIds)
 end
 SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 
@@ -351,7 +364,7 @@ local function OnCombatStateChanged(_, inCombat)
                 d("changing styles because exited combat")
                 CycleAll(SSC.savedOptions.triggers.exitCombat)
             end
-        end, 2000)
+        end, 1000)
     end
 end
 
