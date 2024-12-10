@@ -52,6 +52,17 @@ function SSC.CreateSettingsMenu()
             end,
         },
         {
+            type = "checkbox",
+            name = "Only change if combat occurred",
+            tooltip = "Only change styles if you have been in combat since the last time styles were changed, e.g. if your styles were just changed after exiting combat from killing some enemies, and then you enter a door (loadscreen), then styles won't change again. This avoids unnecessary changes, unless you're showing off while not in combat, I guess...",
+            default = true,
+            getFunc = function() return SSC.savedOptions.onlyTriggerIfCombat end,
+            setFunc = function(value)
+                SSC.savedOptions.onlyTriggerIfCombat = value
+            end,
+            width = "full",
+        },
+        {
             type = "description",
             title = "|c3bdb5eTriggers|r",
             text = "Do nothing - do not change styles\nRandomize all - randomly choose a style, including the current\nRandomize different - randomly choose a style that is different from the current\nCycle - choose the next style in the list",

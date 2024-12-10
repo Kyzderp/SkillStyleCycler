@@ -1,7 +1,7 @@
 SkillStyleCycler = SkillStyleCycler or {}
 local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
-SSC.version = "0.0.1"
+SSC.version = "0.1.0"
 
 --[[
 Modes:
@@ -41,6 +41,7 @@ end
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
 local lastSuccess = 0
+local beenInCombat = true
 
 local reasons = {
     [COLLECTIBLE_USAGE_BLOCK_REASON_ACTIVE_DIG_SITE_REQUIRED] = "ACTIVE_DIG_SITE_REQUIRED",
@@ -121,6 +122,7 @@ local function UseCollectibles(collectibleIds)
             -- On success, stop polling
             PrintDebug("was probably successful")
             lastSuccess = GetGameTimeSeconds()
+            beenInCombat = false
             EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
         end
     end)
@@ -224,6 +226,11 @@ local function CycleAll(mode)
         return
     end
 
+    if (SSC.savedOptions.onlyTriggerIfCombat and not beenInCombat) then
+        CHAT_SYSTEM:AddMessage("Not cycling styles because you haven't been in combat since the last change")
+        return
+    end
+
     local collectibleIds = {}
     local appliedIcons = {}
     local line = ""
@@ -304,8 +311,9 @@ local function BuildSkillStyleTable()
 end
 SSC.BuildSkillStyleTable = BuildSkillStyleTable
 
+-- This seems to fire on player activated too, but oh well
 local function OnProgressionsUpdated()
-    EVENT_MANAGER:RegisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout", 1500, BuildSkillStyleTable)
+    EVENT_MANAGER:RegisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout", 500, BuildSkillStyleTable)
     PrintDebug("progressions updated")
 end
 
@@ -380,6 +388,8 @@ local function OnCombatStateChanged(_, inCombat)
                 CycleAll(SSC.savedOptions.triggers.exitCombat)
             end
         end, 1000)
+    elseif (inCombat) then
+        beenInCombat = true
     end
 end
 
