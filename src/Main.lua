@@ -40,6 +40,8 @@ end
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
+local lastSuccess = 0
+
 local reasons = {
     [COLLECTIBLE_USAGE_BLOCK_REASON_ACTIVE_DIG_SITE_REQUIRED] = "ACTIVE_DIG_SITE_REQUIRED",
     [COLLECTIBLE_USAGE_BLOCK_REASON_BLACKLISTED] = "BLACKLISTED",
@@ -252,10 +254,11 @@ SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 -- TODO: only add it if skill is purchased
 -- TODO: get rid of active, check it every time
 local function BuildSkillStyleTable()
+    EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout")
     d("building skill style table")
     for skillType = 1, GetNumSkillTypes() do
         for skillLineIndex = 1, GetNumSkillLines(skillType) do
-            PrintDebug(GetSkillLineNameById(GetSkillLineId(skillType, skillLineIndex)))
+            -- PrintDebug(GetSkillLineNameById(GetSkillLineId(skillType, skillLineIndex)))
             -- The current class' 3 lines is always returned first, so skip the rest
             if (skillType == SKILL_TYPE_CLASS and skillLineIndex > 3) then break end
 
@@ -264,9 +267,9 @@ local function BuildSkillStyleTable()
                 local numStyles = GetNumProgressionSkillAbilityFxOverrides(progressionId)
 
                 -- Make sure the skill is unlocked
-                local _, _, _, _, _, _, progressionIndex = GetSkillAbilityInfo(skillType, skillLineIndex, skillIndex)
+                local _, _, _, _, _, purchased, progressionIndex = GetSkillAbilityInfo(skillType, skillLineIndex, skillIndex)
 
-                if (progressionIndex ~= nil and numStyles > 0) then
+                if (purchased and progressionIndex ~= nil and numStyles > 0) then
                     -- Collect list of unlocked styles
                     local unlockedStyles = {0}
                     local activeStyle = 1
@@ -293,6 +296,11 @@ local function BuildSkillStyleTable()
     end
 end
 SSC.BuildSkillStyleTable = BuildSkillStyleTable
+
+local function OnProgressionsUpdated()
+    EVENT_MANAGER:RegisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout", 1500, BuildSkillStyleTable)
+    PrintDebug("progressions updated")
+end
 
 
 ---------------------------------------------------------------------------------------------------
@@ -403,6 +411,7 @@ local function Initialize()
 
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "FirstActivated", EVENT_PLAYER_ACTIVATED, OnPlayerActivatedFirstTIme)
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "CombatState", EVENT_PLAYER_COMBAT_STATE, OnCombatStateChanged)
+    EVENT_MANAGER:RegisterForEvent(SSC.name .. "ProgressionsUpdated", EVENT_SKILL_ABILITY_PROGRESSIONS_UPDATED, OnProgressionsUpdated)
 end
 
 ---------------------------------------------------------------------

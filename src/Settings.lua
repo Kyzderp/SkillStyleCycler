@@ -14,7 +14,6 @@ function SSC.CreateSettingsMenu()
     }
 
     -- TODO: button to randomize, button to set all, button to clear all
-    -- TODO: maybe retry applying styles after a wait, for certain blocked reasons
     -- TODO: don't change skills that aren't purchased
     -- TODO: toggleable which skills not to apply to
     -- TODO: disclaimer
