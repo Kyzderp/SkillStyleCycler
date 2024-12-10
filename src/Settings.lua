@@ -38,6 +38,20 @@ function SSC.CreateSettingsMenu()
             width = "full",
         },
         {
+            type = "slider",
+            name = "Throttling",
+            tooltip = "The minimum time in seconds from the last success to cycle again, e.g. if you are rapidly entering and exiting combat, this is how many seconds to wait before cycling styles again, to avoid being kicked by the server for spamming",
+            min = 0,
+            max = 60,
+            step = 1,
+            default = 10,
+            width = "full",
+            getFunc = function() return SSC.savedOptions.throttle end,
+            setFunc = function(value)
+                SSC.savedOptions.throttle = value
+            end,
+        },
+        {
             type = "description",
             title = "|c3bdb5eTriggers|r",
             text = "Do nothing - do not change styles\nRandomize all - randomly choose a style, including the current\nRandomize different - randomly choose a style that is different from the current\nCycle - choose the next style in the list",

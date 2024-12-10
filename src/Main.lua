@@ -120,6 +120,7 @@ local function UseCollectibles(collectibleIds)
 
             -- On success, stop polling
             PrintDebug("was probably successful")
+            lastSuccess = GetGameTimeSeconds()
             EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
         end
     end)
@@ -217,6 +218,12 @@ end
 SSC.GetCollectibleToUse = GetCollectibleToUse -- /script SkillStyleCycler.GetCollectibleToUse(112, SkillStyleCycler.Modes.RANDOMIZE_ALL)
 
 local function CycleAll(mode)
+    local elapsed = GetGameTimeSeconds() - lastSuccess
+    if (elapsed < SSC.savedOptions.throttle) then
+        CHAT_SYSTEM:AddMessage(string.format("Not cycling styles because it has only been %d seconds since the last change", elapsed))
+        return
+    end
+
     local collectibleIds = {}
     local appliedIcons = {}
     local line = ""
@@ -405,7 +412,7 @@ end
 ---------------------------------------------------------------------
 -- Initialize
 local function Initialize()
-    SSC.savedOptions = ZO_SavedVars:NewAccountWide("SkillStyleCyclerSavedVariables", 2, "Options", defaultOptions)
+    SSC.savedOptions = ZO_SavedVars:NewAccountWide("SkillStyleCyclerSavedVariables", 3, "Options", defaultOptions)
 
     SSC.CreateSettingsMenu()
 
