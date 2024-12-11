@@ -122,7 +122,9 @@ local function UseCollectibles(collectibleIds)
             -- On success, stop polling
             PrintDebug("was probably successful")
             lastSuccess = GetGameTimeSeconds()
-            beenInCombat = false
+            if (not IsUnitInCombat("player")) then -- The style change could have occurred in combat
+                beenInCombat = false
+            end
             EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
         end
     end)
