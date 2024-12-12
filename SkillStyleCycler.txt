@@ -1,6 +1,6 @@
 ## Title: SkillStyleCycler
 ## Author: Kyzeragon
-## Version: 0.1.0
+## Version: 0.2.0
 ## APIVersion: 101044
 ## DependsOn: LibAddonMenu-2.0>=31
 

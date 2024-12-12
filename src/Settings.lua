@@ -64,7 +64,7 @@ function SSC.CreateSettingsMenu()
         {
             type = "description",
             title = "|c3bdb5eTriggers|r",
-            text = "Do nothing - do not change styles\nRandomize all - randomly choose a style, including the current\nRandomize different - randomly choose a style that is different from the current\nCycle - choose the next style in the list",
+            text = "Do nothing - do not change styles\nRandomize all - randomly choose a style, including the current\nRandomize different - randomly choose a style different from the current\nCycle - choose the next style in the list",
             width = "full",
         },
         {
@@ -102,6 +102,33 @@ function SSC.CreateSettingsMenu()
                 SSC.savedOptions.triggers.loadscreen = value
             end,
             width = "full",
+        },
+        {
+            type = "description",
+            title = "|cFF2222Warning|r",
+            text = "Using these buttons too fast may result in being booted for spamming.",
+            width = "half",
+        },
+        {
+            type = "button",
+            name = "Clear all",
+            tooltip = "Clear all (unlocked and purchased) styles now",
+            width = "half",
+            func = function() SSC.CycleAll(SSC.Modes.CLEAR, true) end,
+        },
+        {
+            type = "button",
+            name = "Randomize all",
+            tooltip = "Randomizes all (unlocked and purchased) styles now",
+            width = "half",
+            func = function() SSC.CycleAll(SSC.Modes.RANDOMIZE_ALL, true) end,
+        },
+        {
+            type = "button",
+            name = "Set all",
+            tooltip = "Set all (unlocked and purchased) styles now, to the last style in the list",
+            width = "half",
+            func = function() SSC.CycleAll(SSC.Modes.LAST, true) end,
         },
     }
 

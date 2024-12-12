@@ -1,7 +1,7 @@
 SkillStyleCycler = SkillStyleCycler or {}
 local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
-SSC.version = "0.1.0"
+SSC.version = "0.2.0"
 
 --[[
 Modes:
@@ -15,6 +15,8 @@ SSC.Modes = {
     RANDOMIZE_ALL = "Randomize all",
     RANDOMIZE_DIFFERENT = "Randomize different",
     CYCLE = "Cycle",
+    CLEAR = "Clear all",
+    LAST = "Use last",
 }
 
 local defaultOptions = {
@@ -217,6 +219,10 @@ local function GetCollectibleToUse(progressionId, mode)
     elseif (mode == SSC.Modes.RANDOMIZE_DIFFERENT) then
         -- Pick randomly
         newIndex = GetRandomNumberExcept(#data.available, activeIndex)
+    elseif (mode == SSC.Modes.CLEAR) then
+        newIndex = 1
+    elseif (mode == SSC.Modes.LAST) then
+        newIndex = #data.available
     else
         d("|cFF0000????|r")
         return
@@ -248,16 +254,18 @@ SSC.GetCollectibleToUse = GetCollectibleToUse
 -- Reverse Slash 112
 -- /script d(SkillStyleCycler.GetCollectibleToUse(112, SkillStyleCycler.Modes.CYCLE))
 
-local function CycleAll(mode)
-    local elapsed = GetGameTimeSeconds() - lastSuccess
-    if (elapsed < SSC.savedOptions.throttle) then
-        CHAT_SYSTEM:AddMessage(string.format("Not cycling styles because it has only been %d seconds since the last change", elapsed))
-        return
-    end
+local function CycleAll(mode, bypass)
+    if (bypass ~= true) then
+        local elapsed = GetGameTimeSeconds() - lastSuccess
+        if (elapsed < SSC.savedOptions.throttle) then
+            CHAT_SYSTEM:AddMessage(string.format("Not cycling styles because it has only been %d seconds since the last change", elapsed))
+            return
+        end
 
-    if (SSC.savedOptions.onlyTriggerIfCombat and not beenInCombat) then
-        CHAT_SYSTEM:AddMessage("Not cycling styles because you haven't been in combat since the last change")
-        return
+        if (SSC.savedOptions.onlyTriggerIfCombat and not beenInCombat) then
+            CHAT_SYSTEM:AddMessage("Not cycling styles because you haven't been in combat since the last change")
+            return
+        end
     end
 
     local collectibleIds = {}
