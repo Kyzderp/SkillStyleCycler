@@ -14,7 +14,6 @@ function SSC.CreateSettingsMenu()
     }
 
     -- TODO: button to randomize, button to set all, button to clear all
-    -- TODO: don't change skills that aren't purchased
     -- TODO: toggleable which skills not to apply to
     -- TODO: disclaimer
     -- TODO: on cast

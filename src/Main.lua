@@ -157,7 +157,6 @@ A map of progressionId to the collectible IDs, but only if the skill is unlocked
 {
     progressionId = {
         available = {0, 139213, 345435}, -- Treat 0 as no style applied
-        active = 1, -- The index, 1, 2...
     }
 }
 ]]
@@ -177,49 +176,77 @@ local function GetRandomNumberExcept(num, except)
     return result
 end
 
+local function IndexOf(idList, id)
+    for k, v in ipairs(idList) do
+        if (v == id) then
+            return k
+        end
+    end
+    PrintDebug("|cFF0000couldn't find index??|r")
+    return 1
+end
+
+-- Get the icon for this progressionId, i.e. the wanted style
+-- collectibleId = 0 will return the base style
+local function GetIcon(progressionId, collectibleId)
+    if (collectibleId == 0) then
+        local morph = GetProgressionSkillCurrentMorphSlot(progressionId)
+        local abilityId = GetProgressionSkillMorphSlotAbilityId(progressionId, morph)
+        return GetAbilityIcon(abilityId)
+    else
+        return GetCollectibleIcon(collectibleId)
+    end
+end
+
 local function GetCollectibleToUse(progressionId, mode)
     local data = skillStyleTable[progressionId]
     if (not data) then return end
 
     local newIndex
+    local activeCollectibleId = GetActiveProgressionSkillAbilityFxOverrideCollectibleId(progressionId)
+    local activeIndex = IndexOf(data.available, activeCollectibleId)
     if (mode == SSC.Modes.CYCLE) then
         -- Increment, wrapping around if needed
-        newIndex = data.active + 1
+        newIndex = activeIndex + 1
         if (newIndex > #data.available) then
             newIndex = 1
         end
     elseif (mode == SSC.Modes.RANDOMIZE_ALL) then
         -- Pick randomly
         newIndex = GetRandomNumber(#data.available)
-        -- if (newIndex == data.active) then return end -- Same as current, so do nothing
     elseif (mode == SSC.Modes.RANDOMIZE_DIFFERENT) then
         -- Pick randomly
-        newIndex = GetRandomNumberExcept(#data.available, data.active)
-        -- if (newIndex == data.active) then return end -- Same as current, so do nothing
+        newIndex = GetRandomNumberExcept(#data.available, activeIndex)
     else
         d("|cFF0000????|r")
         return
     end
 
     -- Find the ID and icon
-    local collectibleId = data.available[newIndex]
-    local icon
-    -- If the desired is the base style, deactivate the previous one
-    if (collectibleId == 0) then
-        collectibleId = data.available[data.active]
-        local morph = GetProgressionSkillCurrentMorphSlot(progressionId)
-        local abilityId = GetProgressionSkillMorphSlotAbilityId(progressionId, morph)
-        icon = GetAbilityIcon(abilityId)
+    local collectibleId, icon
+    -- If there is no style change...
+    if (newIndex == activeIndex) then
+        -- ... do nothing (return 0 for collectibleId), but still provide the icon
+        collectibleId = data.available[newIndex]
+        icon = GetIcon(progressionId, collectibleId)
+        collectibleId = 0
     else
-        icon = GetCollectibleIcon(collectibleId)
+        if (newIndex == 1) then
+            -- Otherwise, if the desired is the base style, deactivate the previous one
+            icon = GetIcon(progressionId, 0)
+            collectibleId = data.available[activeIndex]
+        else
+            -- Or activate a new one
+            collectibleId = data.available[newIndex]
+            icon = GetIcon(progressionId, collectibleId)
+        end
     end
 
-    if (data.active ~= newIndex) then
-        data.active = newIndex
-    end
     return collectibleId, string.format("|t20:20:%s|t", icon)
 end
-SSC.GetCollectibleToUse = GetCollectibleToUse -- /script SkillStyleCycler.GetCollectibleToUse(112, SkillStyleCycler.Modes.RANDOMIZE_ALL)
+SSC.GetCollectibleToUse = GetCollectibleToUse
+-- Reverse Slash 112
+-- /script d(SkillStyleCycler.GetCollectibleToUse(112, SkillStyleCycler.Modes.CYCLE))
 
 local function CycleAll(mode)
     local elapsed = GetGameTimeSeconds() - lastSuccess
@@ -266,9 +293,6 @@ SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 ---------------------------------------------------------------------------------------------------
 -- Initialize
 ---------------------------------------------------------------------------------------------------
--- TODO: call this on skill changes and style unlocked
--- TODO: only add it if skill is purchased
--- TODO: get rid of active, check it every time
 local function BuildSkillStyleTable()
     EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout")
     d("building skill style table")
@@ -288,14 +312,10 @@ local function BuildSkillStyleTable()
                 if (purchased and progressionIndex ~= nil and numStyles > 0) then
                     -- Collect list of unlocked styles
                     local unlockedStyles = {0}
-                    local activeStyle = 1
                     for fxIndex = 1, numStyles do
                         local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
                         if (IsCollectibleUnlocked(collectibleId)) then
                             table.insert(unlockedStyles, collectibleId)
-                            if (IsCollectibleActive(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER)) then
-                                activeStyle = fxIndex + 1
-                            end
                         end
                     end
 
@@ -303,7 +323,6 @@ local function BuildSkillStyleTable()
                     if (#unlockedStyles > 1) then
                         skillStyleTable[progressionId] = {
                             available = unlockedStyles,
-                            active = activeStyle,
                         }
                     end
                 end
