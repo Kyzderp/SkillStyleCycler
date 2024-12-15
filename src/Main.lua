@@ -44,6 +44,7 @@ end
 ---------------------------------------------------------------------
 local lastSuccess = 0
 local beenInCombat = true
+local inRetries = false
 
 local reasons = {
     [COLLECTIBLE_USAGE_BLOCK_REASON_ACTIVE_DIG_SITE_REQUIRED] = "ACTIVE_DIG_SITE_REQUIRED",
@@ -102,6 +103,7 @@ local function UseCollectibles(collectibleIds)
     retries = retries + 1
     if (retries > 10) then
         d("too many retries, stopping")
+        inRetries = false
         EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
         return
     end
@@ -127,6 +129,7 @@ local function UseCollectibles(collectibleIds)
             if (not IsUnitInCombat("player")) then -- The style change could have occurred in combat
                 beenInCombat = false
             end
+            inRetries = false
             EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
         end
     end)
@@ -147,6 +150,7 @@ local function PollUseCollectibles(collectibleIds)
     if (#collectibleIds == 0) then return end
 
     retries = 0
+    inRetries = true
     UseCollectibles(collectibleIds)
     EVENT_MANAGER:RegisterForUpdate(SSC.name .. "UseCollectiblesUpdate", 2000, function() UseCollectibles(collectibleIds) end)
 end
@@ -266,6 +270,11 @@ local function CycleAll(mode, bypass)
             CHAT_SYSTEM:AddMessage("Not cycling styles because you haven't been in combat since the last change")
             return
         end
+    end
+
+    if (inRetries) then
+        PrintDebug("Not cycling styles because still in retries")
+        return
     end
 
     local collectibleIds = {}
