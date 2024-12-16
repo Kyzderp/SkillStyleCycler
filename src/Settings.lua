@@ -25,28 +25,14 @@ function SSC.CreateSettingsMenu()
         },
         {
             type = "checkbox",
-            name = "Debug",
-            tooltip = "Show debug chat",
-            default = false,
-            getFunc = function() return SSC.savedOptions.debug end,
+            name = "Show styles to be applied",
+            tooltip = "Show chat with icons of which styles will be applied",
+            default = true,
+            getFunc = function() return SSC.savedOptions.printChat end,
             setFunc = function(value)
-                SSC.savedOptions.debug = value
+                SSC.savedOptions.printChat = value
             end,
             width = "full",
-        },
-        {
-            type = "slider",
-            name = "Throttling",
-            tooltip = "The minimum time in seconds from the last success to cycle again, e.g. if you are rapidly entering and exiting combat, this is how many seconds to wait before cycling styles again, to avoid being kicked by the server for spamming",
-            min = 0,
-            max = 60,
-            step = 1,
-            default = 10,
-            width = "full",
-            getFunc = function() return SSC.savedOptions.throttle end,
-            setFunc = function(value)
-                SSC.savedOptions.throttle = value
-            end,
         },
         {
             type = "checkbox",
@@ -67,6 +53,31 @@ function SSC.CreateSettingsMenu()
             getFunc = function() return SSC.savedOptions.cancelRetriesInCombat end,
             setFunc = function(value)
                 SSC.savedOptions.cancelRetriesInCombat = value
+            end,
+            width = "full",
+        },
+        {
+            type = "slider",
+            name = "Throttling",
+            tooltip = "The minimum time in seconds from the last success to cycle again, e.g. if you are rapidly entering and exiting combat, this is how many seconds to wait before cycling styles again, to avoid being kicked by the server for spamming",
+            min = 0,
+            max = 60,
+            step = 1,
+            default = 10,
+            width = "full",
+            getFunc = function() return SSC.savedOptions.throttle end,
+            setFunc = function(value)
+                SSC.savedOptions.throttle = value
+            end,
+        },
+        {
+            type = "checkbox",
+            name = "Debug",
+            tooltip = "Show debug chat",
+            default = false,
+            getFunc = function() return SSC.savedOptions.debug end,
+            setFunc = function(value)
+                SSC.savedOptions.debug = value
             end,
             width = "full",
         },

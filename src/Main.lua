@@ -41,6 +41,12 @@ local function PrintDebug(message)
     end
 end
 
+local function PrintVerbose(message)
+    if (SSC.savedOptions.printChat) then
+        CHAT_SYSTEM:AddMessage(message)
+    end
+end
+
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -95,7 +101,7 @@ local function CanChangeStyle(collectibleId)
     end
 
     local reason = GetCollectibleBlockReason(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER)
-    d(string.format("|cFF6600Can't change styles because %s|r", reasons[reason] or "???"))
+    PrintDebug(string.format("|cFF6600Can't change styles because %s|r", reasons[reason] or "???"))
     return false
 end
 
@@ -237,7 +243,7 @@ local function GetCollectibleToUse(progressionId, mode)
     elseif (mode == SSC.Modes.LAST) then
         newIndex = #data.available
     else
-        d("|cFF0000????|r")
+        PrintDebug("|cFF0000????|r")
         return
     end
 
@@ -264,19 +270,17 @@ local function GetCollectibleToUse(progressionId, mode)
     return collectibleId, string.format("|t20:20:%s|t", icon)
 end
 SSC.GetCollectibleToUse = GetCollectibleToUse
--- Reverse Slash 112
--- /script d(SkillStyleCycler.GetCollectibleToUse(112, SkillStyleCycler.Modes.CYCLE))
 
-local function CycleAll(mode, bypass)
+local function CycleAll(mode, bypass, message)
     if (bypass ~= true) then
         local elapsed = GetGameTimeSeconds() - lastSuccess
         if (elapsed < SSC.savedOptions.throttle) then
-            CHAT_SYSTEM:AddMessage(string.format("Not cycling styles because it has only been %d seconds since the last change", elapsed))
+            PrintDebug(string.format("Not cycling styles because it has only been %d seconds since the last change", elapsed))
             return
         end
 
         if (SSC.savedOptions.onlyTriggerIfCombat and not beenInCombat) then
-            CHAT_SYSTEM:AddMessage("Not cycling styles because you haven't been in combat since the last change")
+            PrintDebug("Not cycling styles because you haven't been in combat since the last change")
             return
         end
     end
@@ -306,9 +310,12 @@ local function CycleAll(mode, bypass)
     end
     table.insert(appliedIcons, line)
 
+    if (message) then
+        PrintVerbose(message)
+    end
     -- Split into multiple lines, or too many icons means some get cut off
     for _, line in ipairs(appliedIcons) do
-        CHAT_SYSTEM:AddMessage(line)
+        PrintVerbose(line)
     end
 
     PollUseCollectibles(collectibleIds)
@@ -321,7 +328,7 @@ SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 ---------------------------------------------------------------------------------------------------
 local function BuildSkillStyleTable()
     EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout")
-    d("building skill style table")
+    PrintDebug("Building skill style table")
     for skillType = 1, GetNumSkillTypes() do
         for skillLineIndex = 1, GetNumSkillLines(skillType) do
             -- PrintDebug(GetSkillLineNameById(GetSkillLineId(skillType, skillLineIndex)))
@@ -431,8 +438,7 @@ local function OnCombatStateChanged(_, inCombat)
     if (not inCombat and SSC.savedOptions.triggers.exitCombat ~= SSC.Modes.DO_NOTHING) then
         zo_callLater(function()
             if (not IsUnitInCombat("player")) then
-                d("changing styles because exited combat")
-                CycleAll(SSC.savedOptions.triggers.exitCombat)
+                CycleAll(SSC.savedOptions.triggers.exitCombat, false, "Changing styles because exited combat")
             end
         end, 1000)
     elseif (inCombat) then
@@ -445,25 +451,24 @@ end
 local function OnPlayerActivated()
     if (SSC.savedOptions.triggers.loadscreen ~= SSC.Modes.DO_NOTHING) then
         zo_callLater(function()
-            d("changing styles because player activated")
-            CycleAll(SSC.savedOptions.triggers.loadscreen)
+            CycleAll(SSC.savedOptions.triggers.loadscreen, false, "Changing styles because loadscreen")
         end, 1000)
     end
 end
 
 ---------------------------------------------------------------------
 -- First time activated
-local function OnPlayerActivatedFirstTIme()
+local function OnPlayerActivatedFirstTime()
     EVENT_MANAGER:UnregisterForEvent(SSC.name .. "FirstActivated", EVENT_PLAYER_ACTIVATED)
 
     BuildSkillStyleTable()
 
     if (SSC.savedOptions.triggers.login ~= SSC.Modes.DO_NOTHING) then
-        d("changing styles because login/reload")
-        CycleAll(SSC.savedOptions.triggers.login)
+        CycleAll(SSC.savedOptions.triggers.login, false, "Changing styles because login/reload")
     end
 
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "PlayerActivated", EVENT_PLAYER_ACTIVATED, OnPlayerActivated)
+    OnPlayerActivated()
 end
 
 ---------------------------------------------------------------------
@@ -473,7 +478,7 @@ local function Initialize()
 
     SSC.CreateSettingsMenu()
 
-    EVENT_MANAGER:RegisterForEvent(SSC.name .. "FirstActivated", EVENT_PLAYER_ACTIVATED, OnPlayerActivatedFirstTIme)
+    EVENT_MANAGER:RegisterForEvent(SSC.name .. "FirstActivated", EVENT_PLAYER_ACTIVATED, OnPlayerActivatedFirstTime)
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "CombatState", EVENT_PLAYER_COMBAT_STATE, OnCombatStateChanged)
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "ProgressionsUpdated", EVENT_SKILL_ABILITY_PROGRESSIONS_UPDATED, OnProgressionsUpdated)
 end
