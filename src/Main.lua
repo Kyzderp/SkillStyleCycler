@@ -21,8 +21,10 @@ SSC.Modes = {
 
 local defaultOptions = {
     debug = false,
+    printChat = true,
     throttle = 10, -- Minimum number of seconds between triggering
     onlyTriggerIfCombat = true,
+    cancelRetriesInCombat = true,
     triggers = {
         login = SSC.Modes.DO_NOTHING,
         exitCombat = SSC.Modes.DO_NOTHING,
@@ -100,9 +102,16 @@ end
 -- Use all collectibles in the list, then listen for success or failure. On success, cancel the polling
 local retries = 0
 local function UseCollectibles(collectibleIds)
+    if (SSC.savedOptions.cancelRetriesInCombat and IsUnitInCombat("player")) then
+        PrintDebug("in combat, stopping")
+        inRetries = false
+        EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
+        return
+    end
+
     retries = retries + 1
     if (retries > 10) then
-        d("too many retries, stopping")
+        PrintDebug("too many retries, stopping")
         inRetries = false
         EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
         return
@@ -151,8 +160,8 @@ local function PollUseCollectibles(collectibleIds)
 
     retries = 0
     inRetries = true
-    UseCollectibles(collectibleIds)
     EVENT_MANAGER:RegisterForUpdate(SSC.name .. "UseCollectiblesUpdate", 2000, function() UseCollectibles(collectibleIds) end)
+    UseCollectibles(collectibleIds)
 end
 
 ---------------------------------------------------------------------

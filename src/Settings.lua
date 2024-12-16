@@ -13,10 +13,8 @@ function SSC.CreateSettingsMenu()
         registerForDefaults = true,
     }
 
-    -- TODO: button to randomize, button to set all, button to clear all
     -- TODO: toggleable which skills not to apply to
     -- TODO: disclaimer
-    -- TODO: on cast
 
     local optionsData = {
         {
@@ -58,6 +56,17 @@ function SSC.CreateSettingsMenu()
             getFunc = function() return SSC.savedOptions.onlyTriggerIfCombat end,
             setFunc = function(value)
                 SSC.savedOptions.onlyTriggerIfCombat = value
+            end,
+            width = "full",
+        },
+        {
+            type = "checkbox",
+            name = "Don't change styles in combat",
+            tooltip = "Since changing styles requires using collectibles, it can prevent you from casting skills for a second. Turn this ON to prevent weaving issues when a trigger occurs during combat (e.g. leaving the puzzle rooms during the Chimera fight in Sanity's Edge)",
+            default = true,
+            getFunc = function() return SSC.savedOptions.cancelRetriesInCombat end,
+            setFunc = function(value)
+                SSC.savedOptions.cancelRetriesInCombat = value
             end,
             width = "full",
         },
