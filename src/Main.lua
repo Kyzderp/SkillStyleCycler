@@ -1,15 +1,8 @@
 SkillStyleCycler = SkillStyleCycler or {}
 local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
-SSC.version = "0.2.0"
+SSC.version = "0.3.0"
 
---[[
-Modes:
-Do nothing
-Randomize all
-Randomize different
-Cycle
-]]
 SSC.Modes = {
     DO_NOTHING = "Do nothing",
     RANDOMIZE_ALL = "Randomize all",
@@ -29,7 +22,6 @@ local defaultOptions = {
         login = SSC.Modes.DO_NOTHING,
         exitCombat = SSC.Modes.DO_NOTHING,
         loadscreen = SSC.Modes.DO_NOTHING, -- really just on player activated
-        onCast = SSC.Modes.DO_NOTHING, -- TODO
     },
 }
 
@@ -273,7 +265,6 @@ local function GetCollectibleToUse(progressionId, mode)
 
     return collectibleId, string.format("|t20:20:%s|t", icon)
 end
-SSC.GetCollectibleToUse = GetCollectibleToUse
 
 local function CycleAll(mode, bypass, message)
     if (bypass ~= true) then
@@ -328,7 +319,7 @@ SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 
 
 ---------------------------------------------------------------------------------------------------
--- Initialize
+-- Collect valid styles
 ---------------------------------------------------------------------------------------------------
 local function BuildSkillStyleTable()
     EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout")
@@ -375,68 +366,7 @@ local function OnProgressionsUpdated()
     PrintDebug("progressions updated")
 end
 
-
----------------------------------------------------------------------------------------------------
--- Apply all
----------------------------------------------------------------------------------------------------
-local function EquipAllSkillStyles()
-    for skillType = 1, GetNumSkillTypes() do
-        for skillLineIndex = 1, GetNumSkillLines(skillType) do
-            -- The current class' 3 lines is always returned first, so skip the rest
-            if (skillType == SKILL_TYPE_CLASS and skillLineIndex > 3) then break end
-
-            for skillIndex = 1, GetNumSkillAbilities(skillType, skillLineIndex) do
-                local progressionId = GetProgressionSkillProgressionId(skillType, skillLineIndex, skillIndex)
-                local numStyles = GetNumProgressionSkillAbilityFxOverrides(progressionId)
-
-                local _, _, _, _, _, _, progressionIndex = GetSkillAbilityInfo(skillType, skillLineIndex, skillIndex)
-                local skillUnlocked = progressionIndex ~= nil
-
-                if (numStyles > 0) then
-                    local name = GetSkillAbilityInfo(skillType, skillLineIndex, skillIndex)
-                    PrintDebug(zo_strformat("<<1>>-<<2>> <<3>> has <<4>> styles", skillLineIndex, skillIndex, name, numStyles))
-
-                    if (not skillUnlocked) then
-                        PrintDebug("...|cFF0000BUT THE SKILL IS NOT UNLOCKED AAAAAAAAAAAA|r")
-                    end
-
-                    -- Find the newest(?) unlocked one, while printing out all and checking for current active
-                    local newestUnlocked
-                    for i = 1, numStyles do
-                        local fxIndex = numStyles + 1 - i -- Go backwards
-                        local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
-                        if (IsCollectibleUnlocked(collectibleId)) then
-                            if (not newestUnlocked) then
-                                newestUnlocked = collectibleId
-                            end
-
-                            -- Don't override a style if one is already set
-                            if (IsCollectibleActive(collectibleId, GAMEPLAY_ACTOR_CATEGORY_PLAYER)) then
-                                PrintDebug(zo_strformat("...|c00FF00<<1>> (<<2>>)|r", GetCollectibleName(collectibleId), collectibleId))
-                            else
-                                local applying = newestUnlocked == collectibleId and skillUnlocked
-                                PrintDebug(zo_strformat("...|cFF9900<<1>> (<<2>>)<<3>>|r",
-                                    GetCollectibleName(collectibleId),
-                                    collectibleId,
-                                    applying and " |c00FF00- applying!" or ""))
-                            end
-                        else
-                            PrintDebug(zo_strformat("...|cFF0000<<1>> (<<2>>)|r", GetCollectibleName(collectibleId), collectibleId))
-                        end
-                    end
-
-                    -- Apply the newest unlocked if there isn't already one
-                    if (skillUnlocked and newestUnlocked ~= nil) then
-                        UseCollectible(newestUnlocked, GAMEPLAY_ACTOR_CATEGORY_PLAYER)
-                    end
-                end
-            end
-        end
-    end
-end
-
-
----------------------------------------------------------------------
+---------------
 -- Combat state
 local function OnCombatStateChanged(_, inCombat)
     if (not inCombat and SSC.savedOptions.triggers.exitCombat ~= SSC.Modes.DO_NOTHING) then
@@ -450,7 +380,7 @@ local function OnCombatStateChanged(_, inCombat)
     end
 end
 
----------------------------------------------------------------------
+---------------
 -- "Loadscreen"
 local function OnPlayerActivated()
     if (SSC.savedOptions.triggers.loadscreen ~= SSC.Modes.DO_NOTHING) then
@@ -460,7 +390,7 @@ local function OnPlayerActivated()
     end
 end
 
----------------------------------------------------------------------
+-----------------------
 -- First time activated
 local function OnPlayerActivatedFirstTime()
     EVENT_MANAGER:UnregisterForEvent(SSC.name .. "FirstActivated", EVENT_PLAYER_ACTIVATED)
