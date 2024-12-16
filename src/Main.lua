@@ -112,6 +112,8 @@ local function UseCollectibles(collectibleIds)
         PrintDebug("in combat, stopping")
         inRetries = false
         EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
+        EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED)
+        EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT)
         return
     end
 
@@ -120,6 +122,8 @@ local function UseCollectibles(collectibleIds)
         PrintDebug("too many retries, stopping")
         inRetries = false
         EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "UseCollectiblesUpdate")
+        EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_UPDATED)
+        EVENT_MANAGER:UnregisterForEvent(SSC.name .. "TestCollectible", EVENT_COLLECTIBLE_USE_RESULT)
         return
     end
 
