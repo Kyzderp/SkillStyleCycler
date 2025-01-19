@@ -213,12 +213,13 @@ local function GetIcon(progressionId, collectibleId)
     if (collectibleId == BASE_STYLE_ID) then
         local morph = GetProgressionSkillCurrentMorphSlot(progressionId)
         local abilityId = GetProgressionSkillMorphSlotAbilityId(progressionId, morph)
-        return GetAbilityIcon(abilityId)
+        return string.format("|t20:20:%s|t", GetAbilityIcon(abilityId))
     else
-        return GetCollectibleIcon(collectibleId)
+        return string.format("|t20:20:%s|t", GetCollectibleIcon(collectibleId))
     end
 end
 
+-- Returns 0 for collectibleId if no collectible should be used
 local function GetCollectibleToUse(progressionId, mode)
     local data = skillStyleTable[progressionId]
     if (not data) then return end
@@ -243,9 +244,27 @@ local function GetCollectibleToUse(progressionId, mode)
         -- Pick randomly
         newIndex = GetRandomNumberExcept(#data.available, activeIndex)
     elseif (mode == SSC.Modes.CLEAR) then
-        newIndex = 1
+        local icon = GetIcon(progressionId, BASE_STYLE_ID)
+        if (activeCollectibleId == BASE_STYLE_ID) then
+            return 0, icon
+        else
+            return activeCollectibleId, icon
+        end
     elseif (mode == SSC.Modes.LAST) then
-        newIndex = #data.available
+        local numStyles = GetNumProgressionSkillAbilityFxOverrides(progressionId)
+        for i = 1, numStyles do
+            local fxIndex = numStyles + 1 - i -- Go backwards
+            local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
+            if (IsCollectibleUnlocked(collectibleId)) then
+                local icon = GetIcon(progressionId, collectibleId)
+                if (collectibleId == activeCollectibleId) then
+                    return 0, icon
+                else
+                    return collectibleId, icon
+                end
+            end
+        end
+        return 0, GetIcon(progressionId, BASE_STYLE_ID)
     else
         PrintDebug("|cFF0000????|r")
         return
@@ -271,7 +290,7 @@ local function GetCollectibleToUse(progressionId, mode)
         end
     end
 
-    return collectibleId, string.format("|t20:20:%s|t", icon)
+    return collectibleId, icon
 end
 
 local function CycleAll(mode, bypass, message)
