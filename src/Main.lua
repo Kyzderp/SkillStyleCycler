@@ -241,7 +241,11 @@ local function GetCollectibleToUse(progressionId, mode)
         newIndex = GetRandomNumber(#data.available)
     elseif (mode == SSC.Modes.RANDOMIZE_DIFFERENT) then
         -- Pick randomly
-        newIndex = GetRandomNumberExcept(#data.available, activeIndex)
+        if (#data.available == 1) then -- This can happen if only 1 is enabled
+            newIndex = 1
+        else
+            newIndex = GetRandomNumberExcept(#data.available, activeIndex)
+        end
     elseif (mode == SSC.Modes.CLEAR) then
         local icon = GetIcon(progressionId, BASE_STYLE_ID)
         if (activeCollectibleId == BASE_STYLE_ID) then
@@ -350,6 +354,7 @@ SSC.CycleAll = CycleAll -- /script SkillStyleCycler.CycleAll("Randomize all")
 local function BuildSkillStyleTable()
     EVENT_MANAGER:UnregisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout")
     PrintDebug("Building skill style table")
+    skillStyleTable = {}
     for skillType = 1, GetNumSkillTypes() do
         for skillLineIndex = 1, GetNumSkillLines(skillType) do
             -- PrintDebug(GetSkillLineNameById(GetSkillLineId(skillType, skillLineIndex)))

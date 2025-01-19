@@ -21,12 +21,21 @@ local orderedProgressionIds = {}
 
 -- TODO: don't save the nonsense, only the styles
 
+-- There doesn't appear to be an API for getting info from only the progressionId, so cache it here
 --[[
-enabledStyles = {
+progressionCache = {
     [progressionId] = {
         name = "blah",
         texture = "blah",
         skillType = SKILL_TYPE_CLASS,
+    },
+}
+]]
+local progressionCache = {}
+
+--[[
+enabledStyles = {
+    [progressionId] = {
         styles = {
             [BASE_STYLE_ID] = true, (base style)
             [collectibleId] = true,
@@ -46,13 +55,15 @@ local function CollectEnabledStylesKeys(enabledStyles)
                 if (numStyles > 0) then
                     table.insert(orderedProgressionIds, progressionId)
                     local name, texture = GetSkillAbilityInfo(skillType, skillLineIndex, skillIndex)
+                    progressionCache[progressionId] = {
+                        name = name,
+                        texture = texture,
+                        skillType = skillType,
+                    }
 
                     -- Add skill if doesn't exist; name/texture could be different if you have it morphed on the class, but it's probably ok
                     if (not enabledStyles[progressionId]) then
                         enabledStyles[progressionId] = {
-                            name = name,
-                            texture = texture,
-                            skillType = skillType,
                             styles = {[BASE_STYLE_ID] = true,}
                         }
                     end
@@ -69,8 +80,6 @@ local function CollectEnabledStylesKeys(enabledStyles)
                             end
 
                             -- Overwrite this anyway so it's updated for the current morphs/class
-                            enabledStyles[progressionId].name = name
-                            enabledStyles[progressionId].texture = texture
                             isValidSkillType = true
                         end
                     end
@@ -88,7 +97,7 @@ SSC.CollectEnabledStylesKeys = CollectEnabledStylesKeys
 local function CreateStyleSetting(controls, progressionId, collectibleId)
     local name
     if (collectibleId == BASE_STYLE_ID) then
-        name = zo_strformat("|t30:30:<<1>>|t <<2>>", SSC.savedOptions.enabledStyles[progressionId].texture, SSC.savedOptions.enabledStyles[progressionId].name)
+        name = zo_strformat("|t30:30:<<1>>|t <<2>>", progressionCache[progressionId].texture, progressionCache[progressionId].name)
     else
         name = zo_strformat("|t30:30:<<1>>|t <<2>>", GetCollectibleIcon(collectibleId), GetCollectibleName(collectibleId))
     end
@@ -120,7 +129,7 @@ local function CreateSkillSettings(controls, progressionId)
 
     table.insert(controls, {
         type = "description",
-        title = SSC.savedOptions.enabledStyles[progressionId].name,
+        title = progressionCache[progressionId].name,
         text = nil,
         width = "full",
     })
@@ -133,7 +142,7 @@ end
 local function CreateSkillTypeSettings(controls, skillType)
     local subControls = {}
     for _, progressionId in ipairs(orderedProgressionIds) do
-        if (SSC.savedOptions.enabledStyles[progressionId].skillType == skillType) then
+        if (progressionCache[progressionId].skillType == skillType) then
             CreateSkillSettings(subControls, progressionId)
         end
     end
