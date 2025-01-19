@@ -1,7 +1,7 @@
 SkillStyleCycler = SkillStyleCycler or {}
 local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
-SSC.version = "1.0.0"
+SSC.version = "1.1.0"
 
 SSC.Modes = {
     DO_NOTHING = "Do nothing",
@@ -371,7 +371,7 @@ local function BuildSkillStyleTable()
                 if (purchased and progressionIndex ~= nil and numStyles > 0) then
                     -- Collect list of unlocked + enabled styles
                     local unlockedStyles = {}
-                    if (SSC.savedOptions.enabledStyles[progressionId].styles[BASE_STYLE_ID] == true) then
+                    if (SSC.savedOptions.enabledStyles[progressionId][BASE_STYLE_ID] == true) then
                         unlockedStyles = {BASE_STYLE_ID}
                     end
 
@@ -380,7 +380,7 @@ local function BuildSkillStyleTable()
                     for fxIndex = 1, numStyles do
                         local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
                         if (IsCollectibleUnlocked(collectibleId)) then
-                            if (SSC.savedOptions.enabledStyles[progressionId].styles[collectibleId] == true) then
+                            if (SSC.savedOptions.enabledStyles[progressionId][collectibleId] == true) then
                                 hasEnabledStyles = true
                                 table.insert(unlockedStyles, collectibleId)
                             end

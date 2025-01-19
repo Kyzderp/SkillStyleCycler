@@ -36,11 +36,9 @@ local progressionCache = {}
 --[[
 enabledStyles = {
     [progressionId] = {
-        styles = {
-            [BASE_STYLE_ID] = true, (base style)
-            [collectibleId] = true,
-            [collectibleId] = false,
-        },
+        [BASE_STYLE_ID] = true, (base style)
+        [collectibleId] = true,
+        [collectibleId] = false,
     },
 }
 ]]
@@ -63,9 +61,7 @@ local function CollectEnabledStylesKeys(enabledStyles)
 
                     -- Add skill if doesn't exist; name/texture could be different if you have it morphed on the class, but it's probably ok
                     if (not enabledStyles[progressionId]) then
-                        enabledStyles[progressionId] = {
-                            styles = {[BASE_STYLE_ID] = true,}
-                        }
+                        enabledStyles[progressionId] = {[BASE_STYLE_ID] = true,}
                     end
 
                     -- Find the newest(?) unlocked one, while printing out all and checking for current active
@@ -75,8 +71,8 @@ local function CollectEnabledStylesKeys(enabledStyles)
                         -- For some reason, there are "styles" that don't exist but return 0 and are included in the number of styles. Unreleased?
                         if (collectibleId ~= 0) then
                             -- Add style if it doesn't exist, defaulting to true
-                            if (enabledStyles[progressionId].styles[collectibleId] == nil) then
-                                enabledStyles[progressionId].styles[collectibleId] = true
+                            if (enabledStyles[progressionId][collectibleId] == nil) then
+                                enabledStyles[progressionId][collectibleId] = true
                             end
 
                             -- Overwrite this anyway so it's updated for the current morphs/class
@@ -107,9 +103,9 @@ local function CreateStyleSetting(controls, progressionId, collectibleId)
         name = name,
         tooltip = "yeet",
         default = true,
-        getFunc = function() return SSC.savedOptions.enabledStyles[progressionId].styles[collectibleId] end,
+        getFunc = function() return SSC.savedOptions.enabledStyles[progressionId][collectibleId] end,
         setFunc = function(value)
-            SSC.savedOptions.enabledStyles[progressionId].styles[collectibleId] = value
+            SSC.savedOptions.enabledStyles[progressionId][collectibleId] = value
             SSC.BuildSkillStyleTable()
         end,
         width = "full",
@@ -120,7 +116,7 @@ local function CreateSkillSettings(controls, progressionId)
     -- Skills with only 1 style (base) could have been included because of 0-collectibles
     local hasStyles = false
     local orderedStyleIds = {}
-    for collectibleId, _ in pairs(SSC.savedOptions.enabledStyles[progressionId].styles) do
+    for collectibleId, _ in pairs(SSC.savedOptions.enabledStyles[progressionId]) do
         if (collectibleId ~= BASE_STYLE_ID) then hasStyles = true end
         table.insert(orderedStyleIds, collectibleId)
     end
@@ -172,12 +168,12 @@ local function CreateToggleSettings()
             func = function()
                 local target
                 for progressionId, data in pairs(SSC.savedOptions.enabledStyles) do
-                    for collectibleId, _ in pairs(data.styles) do
+                    for collectibleId, _ in pairs(data) do
                         if (collectibleId == BASE_STYLE_ID) then
                             if (target == nil) then
-                                target = not data.styles[collectibleId]
+                                target = not data[collectibleId]
                             end
-                            data.styles[collectibleId] = target
+                            data[collectibleId] = target
                         end
                     end
                 end
@@ -192,12 +188,12 @@ local function CreateToggleSettings()
             func = function()
                 local target
                 for progressionId, data in pairs(SSC.savedOptions.enabledStyles) do
-                    for collectibleId, _ in pairs(data.styles) do
+                    for collectibleId, _ in pairs(data) do
                         if (collectibleId ~= BASE_STYLE_ID) then
                             if (target == nil) then
-                                target = not data.styles[collectibleId]
+                                target = not data[collectibleId]
                             end
-                            data.styles[collectibleId] = target
+                            data[collectibleId] = target
                         end
                     end
                 end
