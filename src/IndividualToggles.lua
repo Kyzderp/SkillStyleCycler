@@ -3,11 +3,28 @@ local SSC = SkillStyleCycler
 
 local BASE_STYLE_ID = -1 -- Just so I stop confusing myself
 
+local SKILL_TYPES = {
+    [SKILL_TYPE_ARMOR] = "Armor",
+    [SKILL_TYPE_AVA] = "Alliance War",
+    [SKILL_TYPE_CHAMPION] = "Champion",
+    [SKILL_TYPE_CLASS] = "Class",
+    [SKILL_TYPE_GUILD] = "Guild",
+    [SKILL_TYPE_NONE] = "None",
+    [SKILL_TYPE_RACIAL] = "Racial",
+    [SKILL_TYPE_TRADESKILL] = "Craft",
+    [SKILL_TYPE_WEAPON] = "Weapon",
+    [SKILL_TYPE_WORLD] = "World",
+}
+
+local orderedValidSkillTypes = {}
+local orderedProgressionIds = {}
+
 --[[
 enabledStyles = {
     [progressionId] = {
         name = "blah",
         texture = "blah",
+        skillType = SKILL_TYPE_CLASS,
         styles = {
             [BASE_STYLE_ID] = true, (base style)
             [collectibleId] = true,
@@ -18,17 +35,24 @@ enabledStyles = {
 ]]
 local function CollectEnabledStylesKeys(enabledStyles)
     for skillType = 1, GetNumSkillTypes() do
+        local isValidSkillType = false
         for skillLineIndex = 1, GetNumSkillLines(skillType) do
             for skillIndex = 1, GetNumSkillAbilities(skillType, skillLineIndex) do
                 local progressionId = GetProgressionSkillProgressionId(skillType, skillLineIndex, skillIndex)
                 local numStyles = GetNumProgressionSkillAbilityFxOverrides(progressionId)
 
                 if (numStyles > 0) then
+                    table.insert(orderedProgressionIds, progressionId)
                     local name, texture = GetSkillAbilityInfo(skillType, skillLineIndex, skillIndex)
 
                     -- Add skill if doesn't exist; name/texture could be different if you have it morphed on the class, but it's probably ok
                     if (not enabledStyles[progressionId]) then
-                        enabledStyles[progressionId] = {name = name, texture = texture, styles = {[BASE_STYLE_ID] = true,}}
+                        enabledStyles[progressionId] = {
+                            name = name,
+                            texture = texture,
+                            skillType = skillType,
+                            styles = {[BASE_STYLE_ID] = true,}
+                        }
                     end
 
                     -- Find the newest(?) unlocked one, while printing out all and checking for current active
@@ -45,10 +69,14 @@ local function CollectEnabledStylesKeys(enabledStyles)
                             -- Overwrite this anyway so it's updated for the current morphs/class
                             enabledStyles[progressionId].name = name
                             enabledStyles[progressionId].texture = texture
+                            isValidSkillType = true
                         end
                     end
                 end
             end
+        end
+        if (isValidSkillType) then
+            table.insert(orderedValidSkillTypes, skillType)
         end
     end
 end
@@ -80,10 +108,13 @@ end
 local function CreateSkillSettings(controls, progressionId)
     -- Skills with only 1 style (base) could have been included because of 0-collectibles
     local hasStyles = false
+    local orderedStyleIds = {}
     for collectibleId, _ in pairs(SSC.savedOptions.enabledStyles[progressionId].styles) do
         if (collectibleId ~= BASE_STYLE_ID) then hasStyles = true end
+        table.insert(orderedStyleIds, collectibleId)
     end
     if (not hasStyles) then return end
+    table.sort(orderedStyleIds)
 
     table.insert(controls, {
         type = "description",
@@ -92,17 +123,32 @@ local function CreateSkillSettings(controls, progressionId)
         width = "full",
     })
 
-    for collectibleId, _ in pairs(SSC.savedOptions.enabledStyles[progressionId].styles) do
+    for _, collectibleId in ipairs(orderedStyleIds) do
         CreateStyleSetting(controls, progressionId, collectibleId)
     end
+end
+
+local function CreateSkillTypeSettings(controls, skillType)
+    local subControls = {}
+    for _, progressionId in ipairs(orderedProgressionIds) do
+        if (SSC.savedOptions.enabledStyles[progressionId].skillType == skillType) then
+            CreateSkillSettings(subControls, progressionId)
+        end
+    end
+
+    table.insert(controls, {
+        type = "submenu",
+        name = SKILL_TYPES[skillType],
+        controls = subControls,
+    })
 end
 
 local function CreateToggleSettings()
     CollectEnabledStylesKeys(SSC.savedOptions.enabledStyles)
 
     local controls = {}
-    for progressionId, _ in pairs(SSC.savedOptions.enabledStyles) do
-        CreateSkillSettings(controls, progressionId)
+    for _, skillType in ipairs(orderedValidSkillTypes) do
+        CreateSkillTypeSettings(controls, skillType)
     end
 
     return {
