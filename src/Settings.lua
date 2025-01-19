@@ -9,6 +9,7 @@ function SSC.CreateSettingsMenu()
         name = "Skill Style Cycler",
         author = "Kyzeragon",
         version = SSC.version,
+        slashCommand = "/skillstylecycler",
         registerForRefresh = true,
         registerForDefaults = true,
     }

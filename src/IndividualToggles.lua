@@ -152,7 +152,7 @@ local function CreateToggleSettings()
         {
             type = "description",
             title = nil,
-            text = "You can exclude styles from being picked by the Cycler here. ON = included, OFF = excluded.",
+            text = "You can exclude styles from being picked by the Cycler here. ON = included, OFF = excluded.\nIf all options are OFF for a skill, Cycler will not make any changes to that skill.",
             width = "full",
         },
         {

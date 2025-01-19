@@ -370,18 +370,19 @@ local function BuildSkillStyleTable()
                         unlockedStyles = {BASE_STYLE_ID}
                     end
 
-                    local hasRealStyles = false -- Some like Sacrificial Bones have no styles but API returns one as 0
+                    -- Some like Sacrificial Bones have no styles but API returns one as 0
+                    local hasEnabledStyles = false -- If all are disabled... well that's silly, but we'll just ignore that
                     for fxIndex = 1, numStyles do
                         local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
                         if (IsCollectibleUnlocked(collectibleId)) then
-                            hasRealStyles = true
                             if (SSC.savedOptions.enabledStyles[progressionId].styles[collectibleId] == true) then
+                                hasEnabledStyles = true
                                 table.insert(unlockedStyles, collectibleId)
                             end
                         end
                     end
 
-                    if (hasRealStyles) then
+                    if (hasEnabledStyles) then
                         skillStyleTable[progressionId] = {
                             available = unlockedStyles,
                         }
