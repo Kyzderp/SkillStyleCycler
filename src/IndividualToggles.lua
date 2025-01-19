@@ -19,6 +19,8 @@ local SKILL_TYPES = {
 local orderedValidSkillTypes = {}
 local orderedProgressionIds = {}
 
+-- TODO: don't save the nonsense, only the styles
+
 --[[
 enabledStyles = {
     [progressionId] = {
@@ -146,7 +148,55 @@ end
 local function CreateToggleSettings()
     CollectEnabledStylesKeys(SSC.savedOptions.enabledStyles)
 
-    local controls = {}
+    local controls = {
+        {
+            type = "description",
+            title = nil,
+            text = "You can exclude styles from being picked by the Cycler here. ON = included, OFF = excluded.",
+            width = "full",
+        },
+        {
+            type = "button",
+            name = "Toggle base styles",
+            tooltip = "Set all base styles below to ON or OFF",
+            width = "half",
+            func = function()
+                local target
+                for progressionId, data in pairs(SSC.savedOptions.enabledStyles) do
+                    for collectibleId, _ in pairs(data.styles) do
+                        if (collectibleId == BASE_STYLE_ID) then
+                            if (target == nil) then
+                                target = not data.styles[collectibleId]
+                            end
+                            data.styles[collectibleId] = target
+                        end
+                    end
+                end
+                SSC.BuildSkillStyleTable()
+            end,
+        },
+        {
+            type = "button",
+            name = "Toggle non-base styles",
+            tooltip = "Set all non-base styles below to ON or OFF",
+            width = "half",
+            func = function()
+                local target
+                for progressionId, data in pairs(SSC.savedOptions.enabledStyles) do
+                    for collectibleId, _ in pairs(data.styles) do
+                        if (collectibleId ~= BASE_STYLE_ID) then
+                            if (target == nil) then
+                                target = not data.styles[collectibleId]
+                            end
+                            data.styles[collectibleId] = target
+                        end
+                    end
+                end
+                SSC.BuildSkillStyleTable()
+            end,
+        },
+    }
+
     for _, skillType in ipairs(orderedValidSkillTypes) do
         CreateSkillTypeSettings(controls, skillType)
     end

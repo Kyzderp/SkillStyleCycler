@@ -203,7 +203,6 @@ local function IndexOf(idList, id)
             return k
         end
     end
-    PrintDebug("|cFF0000couldn't find index??|r")
     return -1
 end
 
@@ -371,17 +370,22 @@ local function BuildSkillStyleTable()
                         unlockedStyles = {BASE_STYLE_ID}
                     end
 
+                    local hasRealStyles = false -- Some like Sacrificial Bones have no styles but API returns one as 0
                     for fxIndex = 1, numStyles do
                         local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
-                        if (IsCollectibleUnlocked(collectibleId)
-                            and SSC.savedOptions.enabledStyles[progressionId].styles[collectibleId] == true) then
-                            table.insert(unlockedStyles, collectibleId)
+                        if (IsCollectibleUnlocked(collectibleId)) then
+                            hasRealStyles = true
+                            if (SSC.savedOptions.enabledStyles[progressionId].styles[collectibleId] == true) then
+                                table.insert(unlockedStyles, collectibleId)
+                            end
                         end
                     end
 
-                    skillStyleTable[progressionId] = {
-                        available = unlockedStyles,
-                    }
+                    if (hasRealStyles) then
+                        skillStyleTable[progressionId] = {
+                            available = unlockedStyles,
+                        }
+                    end
                 end
             end
         end
