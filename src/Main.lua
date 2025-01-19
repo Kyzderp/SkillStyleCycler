@@ -23,6 +23,8 @@ local defaultOptions = {
         exitCombat = SSC.Modes.DO_NOTHING,
         loadscreen = SSC.Modes.DO_NOTHING, -- really just on player activated
     },
+    -- See IndividualToggles.lua
+    enabledStyles = {},
 }
 
 
@@ -42,6 +44,8 @@ end
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
+local BASE_STYLE_ID = -1 -- Just so I stop confusing myself
+
 local lastSuccess = 0
 local beenInCombat = true
 local inRetries = false
@@ -173,7 +177,7 @@ end
 A map of progressionId to the collectible IDs, but only if the skill is unlocked and the collectibles are unlocked
 {
     progressionId = {
-        available = {0, 139213, 345435}, -- Treat 0 as no style applied
+        available = {BASE_STYLE_ID, 139213, 345435},
     }
 }
 ]]
@@ -200,13 +204,13 @@ local function IndexOf(idList, id)
         end
     end
     PrintDebug("|cFF0000couldn't find index??|r")
-    return 1
+    return -1
 end
 
 -- Get the icon for this progressionId, i.e. the wanted style
--- collectibleId = 0 will return the base style
+-- collectibleId = BASE_STYLE_ID will return the base style
 local function GetIcon(progressionId, collectibleId)
-    if (collectibleId == 0) then
+    if (collectibleId == BASE_STYLE_ID) then
         local morph = GetProgressionSkillCurrentMorphSlot(progressionId)
         local abilityId = GetProgressionSkillMorphSlotAbilityId(progressionId, morph)
         return GetAbilityIcon(abilityId)
@@ -221,8 +225,12 @@ local function GetCollectibleToUse(progressionId, mode)
 
     local newIndex
     local activeCollectibleId = GetActiveProgressionSkillAbilityFxOverrideCollectibleId(progressionId)
+    if (activeCollectibleId == 0) then activeCollectibleId = BASE_STYLE_ID end
     local activeIndex = IndexOf(data.available, activeCollectibleId)
-    if (mode == SSC.Modes.CYCLE) then
+    if (activeIndex == -1) then
+        -- User has a style currently applied that they have toggled off in settings
+        newIndex = 1 -- TODO
+    elseif (mode == SSC.Modes.CYCLE) then
         -- Increment, wrapping around if needed
         newIndex = activeIndex + 1
         if (newIndex > #data.available) then
@@ -252,10 +260,10 @@ local function GetCollectibleToUse(progressionId, mode)
         icon = GetIcon(progressionId, collectibleId)
         collectibleId = 0
     else
-        if (newIndex == 1) then
+        if (data.available[newIndex] == BASE_STYLE_ID) then
             -- Otherwise, if the desired is the base style, deactivate the previous one
-            icon = GetIcon(progressionId, 0)
-            collectibleId = data.available[activeIndex]
+            icon = GetIcon(progressionId, BASE_STYLE_ID)
+            collectibleId = activeCollectibleId
         else
             -- Or activate a new one
             collectibleId = data.available[newIndex]
@@ -338,21 +346,23 @@ local function BuildSkillStyleTable()
                 local _, _, _, _, _, purchased, progressionIndex = GetSkillAbilityInfo(skillType, skillLineIndex, skillIndex)
 
                 if (purchased and progressionIndex ~= nil and numStyles > 0) then
-                    -- Collect list of unlocked styles
-                    local unlockedStyles = {0}
+                    -- Collect list of unlocked + enabled styles
+                    local unlockedStyles = {}
+                    if (SSC.savedOptions.enabledStyles[progressionId].styles[BASE_STYLE_ID] == true) then
+                        unlockedStyles = {BASE_STYLE_ID}
+                    end
+
                     for fxIndex = 1, numStyles do
                         local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
-                        if (IsCollectibleUnlocked(collectibleId)) then
+                        if (IsCollectibleUnlocked(collectibleId)
+                            and SSC.savedOptions.enabledStyles[progressionId].styles[collectibleId] == true) then
                             table.insert(unlockedStyles, collectibleId)
                         end
                     end
 
-                    -- Only add it to the table if there are styles unlocked, obv
-                    if (#unlockedStyles > 1) then
-                        skillStyleTable[progressionId] = {
-                            available = unlockedStyles,
-                        }
-                    end
+                    skillStyleTable[progressionId] = {
+                        available = unlockedStyles,
+                    }
                 end
             end
         end

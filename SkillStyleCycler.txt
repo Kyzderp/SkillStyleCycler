@@ -9,4 +9,5 @@
 ## SavedVariables: SkillStyleCyclerSavedVariables
 
 src/Main.lua
+src/IndividualToggles.lua
 src/Settings.lua

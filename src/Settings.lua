@@ -123,6 +123,7 @@ function SSC.CreateSettingsMenu()
             end,
             width = "full",
         },
+        SSC.CreateToggleSettings(),
         {
             type = "description",
             title = "|cFF2222Warning|r",
