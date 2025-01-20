@@ -1,7 +1,7 @@
 SkillStyleCycler = SkillStyleCycler or {}
 local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
-SSC.version = "1.1.0"
+SSC.version = "1.1.1"
 
 SSC.Modes = {
     DO_NOTHING = "Do nothing",
@@ -371,12 +371,15 @@ local function BuildSkillStyleTable()
                 if (purchased and progressionIndex ~= nil and numStyles > 0) then
                     -- Collect list of unlocked + enabled styles
                     local unlockedStyles = {}
-                    if (SSC.savedOptions.enabledStyles[progressionId][BASE_STYLE_ID] == true) then
-                        unlockedStyles = {BASE_STYLE_ID}
-                    end
 
                     -- Some like Sacrificial Bones have no styles but API returns one as 0
-                    local hasEnabledStyles = false -- If all are disabled... well that's silly, but we'll just ignore that
+                    local hasEnabledStyles = false -- If all are disabled, then don't add it to the table at all
+
+                    if (SSC.savedOptions.enabledStyles[progressionId][BASE_STYLE_ID] == true) then
+                        unlockedStyles = {BASE_STYLE_ID}
+                        hasEnabledStyles = true
+                    end
+
                     for fxIndex = 1, numStyles do
                         local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, fxIndex)
                         if (IsCollectibleUnlocked(collectibleId)) then
