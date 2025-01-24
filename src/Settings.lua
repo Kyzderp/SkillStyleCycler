@@ -134,7 +134,7 @@ function SSC.CreateSettingsMenu()
         {
             type = "button",
             name = "Clear all",
-            tooltip = "Clear all (unlocked and purchased) styles now. This is not affected by individual toggles",
+            tooltip = "Clear all (unlocked and purchased) styles now. This is not affected by style filters",
             width = "half",
             func = function() SSC.CycleAll(SSC.Modes.CLEAR, true) end,
         },
@@ -148,7 +148,7 @@ function SSC.CreateSettingsMenu()
         {
             type = "button",
             name = "Set all",
-            tooltip = "Set all (unlocked and purchased) styles now, to the last style in the list. This is not affected by individual toggles",
+            tooltip = "Set all (unlocked and purchased) styles now, to the last style in the list. This is not affected by style filters",
             width = "half",
             func = function() SSC.CycleAll(SSC.Modes.LAST, true) end,
         },

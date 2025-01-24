@@ -92,16 +92,30 @@ SSC.CollectEnabledStylesKeys = CollectEnabledStylesKeys
 
 local function CreateStyleSetting(controls, progressionId, collectibleId)
     local name
+    local disabled = false
+    local tooltip = "Include this style when the Cycler randomizes or cycles styles."
     if (collectibleId == BASE_STYLE_ID) then
         name = zo_strformat("|t30:30:<<1>>|t <<2>>", progressionCache[progressionId].texture, progressionCache[progressionId].name)
     else
         name = zo_strformat("|t30:30:<<1>>|t <<2>>", GetCollectibleIcon(collectibleId), GetCollectibleName(collectibleId))
+        local hint = GetCollectibleHint(collectibleId)
+        if (not IsCollectibleUnlocked(collectibleId)) then
+            name = name .. " |t20:20:/esoui/art/miscellaneous/status_locked.dds|t"
+            disabled = true
+            tooltip = "Style is not unlocked."
+        end
+
+        -- It seems empty hints would be "Acquired through Purchase, Promotion, or Event" IF it is purchasable
+        -- Not sure if there are any that aren't, but better to just not display it
+        if (hint ~= "") then
+            tooltip = tooltip .. "\n" .. hint
+        end
     end
 
     table.insert(controls, {
         type = "checkbox",
         name = name,
-        tooltip = "yeet",
+        tooltip = tooltip,
         default = true,
         getFunc = function() return SSC.savedOptions.enabledStyles[progressionId][collectibleId] end,
         setFunc = function(value)
@@ -109,6 +123,7 @@ local function CreateStyleSetting(controls, progressionId, collectibleId)
             SSC.BuildSkillStyleTable()
         end,
         width = "full",
+        disabled = disabled,
     })
 end
 
@@ -162,8 +177,8 @@ local function CreateToggleSettings()
         },
         {
             type = "button",
-            name = "Toggle base styles",
-            tooltip = "Set all base styles below to ON or OFF",
+            name = "Toggle all default styles",
+            tooltip = "Set all default styles below to ON or OFF",
             width = "half",
             func = function()
                 local target
@@ -182,8 +197,8 @@ local function CreateToggleSettings()
         },
         {
             type = "button",
-            name = "Toggle non-base styles",
-            tooltip = "Set all non-base styles below to ON or OFF",
+            name = "Toggle all collectibles",
+            tooltip = "Set all non-default styles below to ON or OFF",
             width = "half",
             func = function()
                 local target
@@ -208,7 +223,7 @@ local function CreateToggleSettings()
 
     return {
         type = "submenu",
-        name = "Individual Toggles",
+        name = "Style Filters",
         controls = controls,
     }
 end
