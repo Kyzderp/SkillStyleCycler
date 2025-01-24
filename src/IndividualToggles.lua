@@ -109,6 +109,8 @@ local function CreateStyleSetting(controls, progressionId, collectibleId)
         -- Not sure if there are any that aren't, but better to just not display it
         if (hint ~= "") then
             tooltip = tooltip .. "\n" .. hint
+        elseif (IsCollectiblePurchasable(collectibleId)) then
+            tooltip = tooltip .. "\n(Probably) " .. GetString(SI_COLLECTIBLE_TOOLTIP_PURCHASABLE)
         end
     end
 
