@@ -2,7 +2,7 @@
 ## Cycle or randomize your skill styles, because fashion is the true endgame.
 ## Author: Kyzeragon
 ## Contributors: Kortekk (idea, testing, feedback)
-## Version: 1.2.0
+## Version: 1.3.0
 ## APIVersion: 101044 101045
 ## DependsOn: LibAddonMenu-2.0>=31
 
@@ -10,4 +10,5 @@
 
 src/Main.lua
 src/IndividualToggles.lua
+src/SourceData.lua
 src/Settings.lua

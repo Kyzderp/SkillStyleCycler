@@ -67,6 +67,7 @@ local function CollectEnabledStylesKeys(enabledStyles)
                     -- Find the newest(?) unlocked one, while printing out all and checking for current active
                     for i = 1, numStyles do
                         local collectibleId = GetProgressionSkillAbilityFxOverrideCollectibleIdByIndex(progressionId, i)
+                        -- d(zo_strformat("<<1>>, -- <<2>>", collectibleId, GetCollectibleName(collectibleId)))
 
                         -- For some reason, there are "styles" that don't exist but return 0 and are included in the number of styles. Unreleased?
                         if (collectibleId ~= 0) then
@@ -90,6 +91,9 @@ end
 SSC.CollectEnabledStylesKeys = CollectEnabledStylesKeys
 -- /script local a = {} SkillStyleCycler.CollectEnabledStylesKeys(a) d(a)
 
+---------------------------------------------------------------------
+-- Dynamically generate the settings menu
+---------------------------------------------------------------------
 local function CreateStyleSetting(controls, progressionId, collectibleId)
     local name
     local disabled = false
@@ -106,11 +110,16 @@ local function CreateStyleSetting(controls, progressionId, collectibleId)
         end
 
         -- It seems empty hints would be "Acquired through Purchase, Promotion, or Event" IF it is purchasable
-        -- Not sure if there are any that aren't, but better to just not display it
+        -- Not sure if there are any that aren't, but better to have the Probably disclaimer...
         if (hint ~= "") then
-            tooltip = tooltip .. "\n" .. hint
+            tooltip = tooltip .. "\n\n" .. hint
         elseif (IsCollectiblePurchasable(collectibleId)) then
-            tooltip = tooltip .. "\n(Probably) " .. GetString(SI_COLLECTIBLE_TOOLTIP_PURCHASABLE)
+            if (SSC.sourceData[collectibleId]) then
+                -- Add manual note
+                tooltip = tooltip .. "\n\n" .. SSC.sourceData[collectibleId]
+            else
+                tooltip = tooltip .. "\n\n(Probably) " .. GetString(SI_COLLECTIBLE_TOOLTIP_PURCHASABLE)
+            end
         end
     end
 
