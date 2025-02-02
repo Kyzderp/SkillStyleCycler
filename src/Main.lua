@@ -1,7 +1,7 @@
 SkillStyleCycler = SkillStyleCycler or {}
 local SSC = SkillStyleCycler
 SSC.name = "SkillStyleCycler"
-SSC.version = "1.3.0"
+SSC.version = "1.3.1"
 
 SSC.Modes = {
     DO_NOTHING = "Do nothing",
@@ -408,6 +408,11 @@ local function OnProgressionsUpdated()
     PrintDebug("progressions updated")
 end
 
+local function OnCollectiblesUnlocked()
+    EVENT_MANAGER:RegisterForUpdate(SSC.name .. "ProgressionsUpdatedTimeout", 500, BuildSkillStyleTable)
+    PrintDebug("unlock state changed")
+end
+
 ---------------
 -- Combat state
 local function OnCombatStateChanged(_, inCombat)
@@ -457,6 +462,7 @@ local function Initialize()
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "FirstActivated", EVENT_PLAYER_ACTIVATED, OnPlayerActivatedFirstTime)
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "CombatState", EVENT_PLAYER_COMBAT_STATE, OnCombatStateChanged)
     EVENT_MANAGER:RegisterForEvent(SSC.name .. "ProgressionsUpdated", EVENT_SKILL_ABILITY_PROGRESSIONS_UPDATED, OnProgressionsUpdated)
+    EVENT_MANAGER:RegisterForEvent(SSC.name .. "UnlockState", EVENT_COLLECTIBLES_UNLOCK_STATE_CHANGED, OnCollectiblesUnlocked)
 end
 
 ---------------------------------------------------------------------
