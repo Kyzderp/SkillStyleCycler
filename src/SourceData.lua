@@ -3,6 +3,8 @@ local SSC = SkillStyleCycler
 
 local CLASS_STYLE_PACK = "This is 1 of 21 styles in the Class Style Pack: Tamriel United bundle, previously available for free (with 2 >L50 characters) in the Crown Store."
 local NEW_LIFE_STYLES = "This is 1 of 3 styles in the New Life Styles: Winter bundle, previously available for 2500 |t16:16:/esoui/art/currency/crowns_mipmap.dds|t in the Crown Store."
+local CARNAVAL_CRATE_LEGENDARY = "This is a Legendary reward from Carnaval Crates, or directly purchased with 100 |t16:16:/esoui/art/currency/crowngem_mipmap.dds|t or 3600 |t16:16:/esoui/art/currency/currency_seals_of_endeavor_64.dds|t."
+local CARNAVAL_CRATE_EPIC = "This is an Epic reward from Carnaval Crates, or directly purchased with 40 |t16:16:/esoui/art/currency/crowngem_mipmap.dds|t or 2000 |t16:16:/esoui/art/currency/currency_seals_of_endeavor_64.dds|t."
 
 -- This is a manual map of where "purchasable" collectibles came from, if known.
 -- The intention is to continually update this as more styles are
@@ -45,8 +47,21 @@ SSC.sourceData = {
 -- WEAPON
     [13058] = NEW_LIFE_STYLES, -- Critical Charge, Winter's Gale
     [13056] = NEW_LIFE_STYLES, -- Volley, Winterfall
+    [13446] = CARNAVAL_CRATE_LEGENDARY, -- Wall of Elements, Autumn Leaves
+    [13447] = CARNAVAL_CRATE_EPIC, -- Whirlwind, Cinnabar Red
+
+-----------------------------
+-- ARMOR
+
+-----------------------------
+-- WORLD
 
 -----------------------------
 -- GUILD
     [13057] = NEW_LIFE_STYLES, -- Meteor, Winter's Blast
+
+-----------------------------
+-- ALLIANCE WAR
+    [13449] = CARNAVAL_CRATE_LEGENDARY, -- War Horn, Aquatic
+    [13460] = CARNAVAL_CRATE_EPIC, -- Vigor, Verdant Green
 }
