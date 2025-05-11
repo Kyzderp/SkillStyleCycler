@@ -25,7 +25,7 @@ SSC.sourceData = {
     [12948] = CLASS_STYLE_PACK, -- Veiled Strike, Lilac Purple
     [12946] = CLASS_STYLE_PACK, -- Assassin's Blade, Lilac Purple
 
-    [13059] = "This was previously available for 2000 |t16:16:/esoui/art/currency/crowns_mipmap.dds|t in the Crown Store.", -- Summon Winged Twilight, Warrior
+    [13059] = "This was available for 2000 |t16:16:/esoui/art/currency/crowns_mipmap.dds|t in the Crown Store.", -- Summon Winged Twilight, Warrior
     [12949] = CLASS_STYLE_PACK, -- Crystal Shard, Ruby Red
     [12951] = CLASS_STYLE_PACK, -- Daedric Curse, Ruby Red
     [12950] = CLASS_STYLE_PACK, -- Lightning Form, Ruby Red
@@ -59,6 +59,7 @@ SSC.sourceData = {
 -----------------------------
 -- GUILD
     [13057] = NEW_LIFE_STYLES, -- Meteor, Winter's Blast
+    [13448] = "This was available for 1500 |t16:16:/esoui/art/currency/crowns_mipmap.dds|t in the Crown Store.", -- Magelight, Passion Blossom
 
 -----------------------------
 -- ALLIANCE WAR

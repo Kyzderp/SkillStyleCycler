@@ -37,7 +37,7 @@ end
 
 local function PrintVerbose(message)
     if (SSC.savedOptions.printChat) then
-        CHAT_SYSTEM:AddMessage(message)
+        CHAT_ROUTER:AddSystemMessage(message)
     end
 end
 

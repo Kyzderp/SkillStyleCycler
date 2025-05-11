@@ -4,7 +4,7 @@
 ## Contributors: Kortekk (idea, testing, feedback)
 ## Version: 1.3.2
 ## APIVersion: 101045
-## DependsOn: LibAddonMenu-2.0>=31
+## DependsOn: LibAddonMenu-2.0>=38
 
 ## SavedVariables: SkillStyleCyclerSavedVariables
 
